@@ -1,8 +1,6 @@
-/* eslint-env node */
-
-import "dotenv/config";
-import fs from "fs-extra";
-import path from "path";
+require("dotenv/config");
+const fs = require("fs-extra");
+const path = require("path");
 
 // Entferne die aktuelle Version der "gebauten" Anwendung
 if (fs.pathExistsSync(process.env.TARGET)) {

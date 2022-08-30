@@ -6,3 +6,6 @@ node_modules
 
 # Local build folder
 deploy
+
+# local compiled webpack files
+app/dist
