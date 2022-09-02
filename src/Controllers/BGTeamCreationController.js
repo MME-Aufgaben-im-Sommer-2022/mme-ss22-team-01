@@ -54,7 +54,7 @@ export default class BGTeamCreationController extends BGMemberCreationController
             const teams = new Teams(client);
     
             const team = await teams.create("unique()", "chat");
-            const membership = await teams.createMembership(team.$id, mail, [], AppWriteConfig.APPLICATION_URL);
+            const membership = await teams.createMembership(team.$id, mail, [], `https://${AppWriteConfig.APPLICATION_URL}`);
 
             console.log(membership);
             this._onConfigurationFinished(this);
