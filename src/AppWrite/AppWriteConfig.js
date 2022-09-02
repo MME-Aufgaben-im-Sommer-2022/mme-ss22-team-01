@@ -35,6 +35,6 @@ export default class AppWriteConfig {
     }
 
     static get APPLICATION_URL() {
-        return "https://begreen.software-engineering.education";
+        return "begreen.software-engineering.education";
     }
 }
