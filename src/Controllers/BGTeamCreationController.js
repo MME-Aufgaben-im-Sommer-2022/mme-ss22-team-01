@@ -5,6 +5,7 @@ import AppWriteClient from "../AppWrite/AppWriteClient.js";
 import AppWriteConfig from "../AppWrite/AppWriteConfig.js";
 import BGMemberCreationController from "./BGMemberCreationController.js";
 import BGTeamCreationSectionView from "../UI/Views/BGTeamCreationSectionView.js";
+import AppWriteTeamManager from "../Data/Managers/AppWriteTeamManager.js";
 
 export default class BGTeamCreationController extends BGMemberCreationController {
 
@@ -35,29 +36,15 @@ export default class BGTeamCreationController extends BGMemberCreationController
 
     _onGroupSubmit(event) {
         const name = event.data.name;
+        const type = AppWriteTeamManager.TeamType.group;
 
-        (async () => {
-            const client = AppWriteClient.sharedInstance.client;
-            const teams = new Teams(client);
-    
-            const result = await teams.create("unique()", name);
-            console.log(result);
-            this._onConfigurationFinished(this);
-        })();
+        this._onConfigurationFinished({name: name, type: type});
     }
 
     _onFriendSubmit(event) {
         const mail = event.data.name;
+        const type = AppWriteTeamManager.TeamType.chat;
 
-        (async () => {
-            const client = AppWriteClient.sharedInstance.client;
-            const teams = new Teams(client);
-    
-            const team = await teams.create("unique()", "chat");
-            const membership = await teams.createMembership(team.$id, mail, [], `https://${AppWriteConfig.APPLICATION_URL}`);
-
-            console.log(membership);
-            this._onConfigurationFinished(this);
-        })();
+        this._onConfigurationFinished({mail: mail, type: type});
     }
 }

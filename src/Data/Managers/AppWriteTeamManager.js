@@ -43,13 +43,13 @@ export default class AppWriteTeamManager extends AppWriteResourceManager {
 
     async loadResources(filter) {
         const teamsResult = await this.api.list(filter);
-        const teams = teamsResult.teams;
+        const teams = [];
 
-        for (const team of teams) team.name = await this._prepareTeam(team);
-
+        for (const result of teamsResult.teams) {
+            const team = await this._prepareTeam(result);
+            if (team !== undefined) teams.push(team);
+        }
         return teams;
-
-        return [];
     }
 
     async _prepareTeam(team, join = " + ") {
@@ -57,7 +57,7 @@ export default class AppWriteTeamManager extends AppWriteResourceManager {
 
         if (team.name !== AppWriteTeamManager.TeamType.chat) {
             team.type = AppWriteTeamManager.TeamType.group;
-            return team.name;
+            return team;
         }
 
         team.type = AppWriteTeamManager.TeamType.chat;
@@ -68,17 +68,21 @@ export default class AppWriteTeamManager extends AppWriteResourceManager {
         switch (namingScheme) {
             case AppWriteTeamManager.NamingScheme.short:
                 const userId = AppWriteAuthentication.sharedInstance.user.$id;
-                if (userId === undefined) return undefined;
+                if (userId === undefined) throw new Error("Cannot derive team names for unauthenticated users");
 
                 const membership = memberships.find(membership => membership.userId !== userId);
                 if (membership === undefined) return undefined;
 
-                return membership.userName;
+                team.name = membership.userName;
+                break;
             case AppWriteTeamManager.NamingScheme.full:
-                return memberships.map(membership => membership.userName).join(join);
+                team.name = memberships.map(membership => membership.userName).join(join);
+                break;
             default:
                 throw new Error(`Unsupported naming scheme: ${namingScheme}`);
         }
+
+        return team;
     }
 
     observe(filter) {
@@ -109,16 +113,24 @@ export default class AppWriteTeamManager extends AppWriteResourceManager {
         const api = this.api;
 
         const team = await api.create(AppWriteConfig.UNIQUE_ID, AppWriteTeamManager.TeamType.chat);
-        await api.createMembership(team.$id, mail, [], AppWriteConfig.APPLICATION_URL);
+        await api.createMembership(team.$id, mail, [], `https://${AppWriteConfig.APPLICATION_URL}`); // todo https vielleicht in config aufnehemn! testen
 
         return team;
     }
 
     createGroup(name) {
-        this._crateGroup(name).then(this._didCreate.bind(this), (error) => { throw error }); // todo observers
+        return this._crateGroup(name).then(this._didCreate.bind(this), error => { throw error }); // todo observers
     }
 
     createChat(mail) {
-        this._createChat(mail).then(this._didCreate.bind(this), (error) => { throw error });
+        return this._createChat(mail).then(this._didCreate.bind(this), error => { throw error });
+    }
+
+    async _delete(teamId) {
+        return await this.api.delete(teamId);
+    }
+
+    delete(teamId) {
+        return this._delete(teamId).then(this._didDelete.bind(this), error => { throw error });
     }
 }

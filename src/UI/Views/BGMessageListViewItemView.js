@@ -91,7 +91,7 @@ export default class BGMessageListViewItemView extends BGListViewItemView {
 
     _createInfoView() {
         const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.flexStart);
-        stackView.gap = Gap.all("5px");
+        stackView.gap = Gap.all("10px");
 
         const nameLabel = this._createNameLabel();
         stackView.addView(nameLabel);
@@ -110,7 +110,7 @@ export default class BGMessageListViewItemView extends BGListViewItemView {
         label.fontSize = "12px";
         label.fontFamily = Label.FontFamily.sansSerif;
         label.text = "Natalie";
-        label.color = Color.black;
+        label.color = Color.darkGreen;
 
         return label;
     }
@@ -120,7 +120,7 @@ export default class BGMessageListViewItemView extends BGListViewItemView {
         label.fontFamily = Label.FontFamily.sansSerif;
         label.fontWeight = Label.FontWeight.bold;
         label.text = "10:00";
-        label.fontSize = "9px";
+        label.fontSize = "8px";
         label.color = Color.darkGrey;
 
         return label;

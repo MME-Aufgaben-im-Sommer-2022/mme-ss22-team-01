@@ -16,6 +16,10 @@ class Stylable {
     toStyle() {
         throw new ImplementationError();
     }
+
+    equals(value) {
+        throw new ImplementationError();
+    }
 }
 
 export class Color {
@@ -552,6 +556,10 @@ export class Corners extends Stylable {
 
         return corners;
     }
+
+    equals(value) {
+        return this.topLeft === value.topLeft && this.topRight === value.topRight && this.bottomLeft === value.bottomLeft && this.bottomRight === value.bottomRight;
+    }
 }
 
 export class RoundedCorner {
@@ -695,6 +703,10 @@ export class Inset extends Stylable {
 
     set bottom(value) {
         this._bottom = value;
+    }
+
+    equals(value) {
+        return value.left === this.left && value.right === this.right && value.top === this.top && value.bottom === this.bottom;
     }
 }
 
@@ -909,12 +921,21 @@ export class Borders extends Inset {
 }
 
 export class View extends Observable {
+
     constructor() {
         super();
 
         this._createNode();
 
         this._views = [];
+    }
+
+    set pointerEvents(value) {
+        this.node.style.pointerEvents = value;
+    }
+
+    get pointerEvents() {
+        return this.node.style.pointerEvents;
     }
 
     static get display() {
@@ -1024,8 +1045,23 @@ export class View extends Observable {
         this.views.forEach(view => view.isDisabled = value);
     }
 
+    get innerHTML() {
+        return this.node.innerHTML;
+    }
+
+    set innerHTML(value) {
+        this.node.innerHTML = value;
+    }
+
     set parentView(value) {
         this._parentView = value;
+    }
+
+    static get PointerEvents() {
+        return Object.freeze({
+            auto: "auto",
+            none: "none"
+        });
     }
 
     static get Position() {
@@ -1327,6 +1363,10 @@ export class View extends Observable {
 
         Object.assign(this.node.style, value.toStyle());
     }
+
+    get htmlText() {
+        return this.node.outerHTML;
+    }
 }
 
 export class GaussianBlurFilter extends Stylable {
@@ -1362,6 +1402,10 @@ export class GaussianBlurFilter extends Stylable {
         style.filter = `blur(${this.radius})`;
 
         return style;
+    }
+
+    equals(value) {
+        return this.radius === value.radius;
     }
 }
 
@@ -1765,6 +1809,13 @@ export class Label extends View {
         });
     }
 
+    static get TextOverflow() {
+        return Object.freeze({
+            ellipsis: "ellipsis",
+            clip: "clip",
+        });
+    }
+
     constructor(text = "") {
         super();
 
@@ -1833,6 +1884,20 @@ export class Label extends View {
         this.node.style.whiteSpace = value;
     }
 
+    get textOverflow() {
+        const textOverflow = this.node.style.textOverflow;
+        const values = Object.values(Label.TextOverflow);
+
+        const value = values.find(value => value === textOverflow);
+        if (value === undefined) throw new Error(`Unsupported textOverflow: ${textOverflow}`);
+
+        return value;
+    }
+
+    set textOverflow(value) {
+        this.node.style.textOverflow = value;
+    }
+
     get fontWeight() {
         const fontWeight = this.node.style.fontWeight;
         const values = Object.values(Label.FontWeight);
@@ -1881,10 +1946,6 @@ export class Label extends View {
 export class Icon extends Label {
     static get tag() {
         return "i";
-    }
-
-    set pointerEvents(value){
-        this.node.style.pointerEvents = value;
     }
 }
 
@@ -1944,6 +2005,30 @@ export class TextField extends Label {
 
     static get TEXT_FIELD_INPUT_NOTIFICATION_TYPE() {
         return "input";
+    }
+
+    get isRequired() {
+        return this.node.required;
+    }
+
+    set isRequired(value) {
+        this.node.required = value;
+    }
+
+    isValid() {
+        return this.node.checkValidity();
+    }
+
+    validate() {
+        return this.node.reportValidity();
+    }
+
+    set validationMessage(value) {
+        return this.node.setCustomValidity(value);
+    }
+
+    get validationMessage() {
+        return this.node.validationMessage;
     }
 
     static get TextInputType() {
@@ -2053,19 +2138,19 @@ export class TextField extends Label {
     }
 
     get minLength() {
-        return this.node.minlength;
+        return this.node.minLength;
     }
 
     set minLength(value) {
-        this.node.minlength = value;
+        this.node.minLength = value;
     }
 
     get maxLength() {
-        return this.node.maxlength;
+        return this.node.maxLength;
     }
 
     set maxLength(value) {
-        this.node.maxlength = value;
+        this.node.maxLength = value;
     }
 
     get pattern() {
@@ -2078,8 +2163,6 @@ export class TextField extends Label {
 }
 
 export class TextArea extends TextField {
-
-
     static get Resize() {
         return Object.freeze({
             both: "both",
@@ -2400,26 +2483,30 @@ class ViewPortAnchor extends View {
 
 export class Controller extends Observable {
 
-    static get CONTROLLER_STATE_CHANGE_NOTIFICATION_TYPE() {
-        return "state";
+    static get PRESENTATION_STATE_CHANGE_NOTIFICATION_TYPE() {
+        return "presentationStateChanged";
     }
 
-    static get State() {
+    static get VIEWS_CREATED_NOTIFICATION_TYPE() {
+        return "viewsCreated";
+    }
+
+    static get PresentationState() {
         return Object.freeze({
             presented: "presented",
             presenting: "presenting"
         });
     }
 
-    get state() {
-        return this._state;
+    get presentationState() {
+        return this._presentationState;
     }
 
-    set state(value) {
-        if (this.state === value) return;
+    set presentationState(value) {
+        if (this.presentationState === value) return;
 
-        this._state = value;
-        this._onStateChange();
+        this._presentationState = value;
+        this._onPresentationStateChange();
     }
 
     constructor() {
@@ -2427,12 +2514,17 @@ export class Controller extends Observable {
         this._controllers = [];
 
         this._createView();
-
-        this._determineState();
+        this._onViewsCreated();
+        this._determinePresentationState();
     }
 
     get controllers() {
         return this._controllers;
+    }
+
+    _onViewsCreated() {
+        const event = new Event(Controller.VIEWS_CREATED_NOTIFICATION_TYPE, this);
+        this.notifyAll(event);
     }
 
     _createView() {
@@ -2452,15 +2544,15 @@ export class Controller extends Observable {
 
         parentView.addView(controller.view);
 
-        this._determineState();
+        this._determinePresentationState();
     }
 
-    _determineState() {
-        this.state = this.controllers.length > 0 ? Controller.State.presenting : Controller.State.presented;
+    _determinePresentationState() {
+        this.presentationState = this.controllers.length > 0 ? Controller.PresentationState.presenting : Controller.PresentationState.presented;
     }
 
-    _onStateChange() {
-        const event = new Event(Controller.CONTROLLER_STATE_CHANGE_NOTIFICATION_TYPE, this);
+    _onPresentationStateChange() {
+        const event = new Event(Controller.PRESENTATION_STATE_CHANGE_NOTIFICATION_TYPE, this);
         this.notifyAll(event);
     }
 
@@ -2475,9 +2567,13 @@ export class Controller extends Observable {
         if (index >= 0) controllers.splice(index, 1);
         controller.parentController = undefined;
 
-        this._determineState();
+        this._determinePresentationState();
 
         return controller;
+    }
+
+    removeControllers() {
+        this.controllers.forEach(this.removeController.bind(this));
     }
 
     removeFromParentController() {
@@ -2492,6 +2588,8 @@ export class Controller extends Observable {
 
     removeControllers() {
         const controllers = this.controllers;
+
+        console.log(controllers.length);
 
         controllers.splice(0, controllers.length).forEach(controller => controller.removeFromParentController());
     }

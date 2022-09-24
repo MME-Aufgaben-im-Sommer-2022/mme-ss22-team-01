@@ -1,8 +1,8 @@
 "use strict";
 
-import { View, Color, StackView, Label, Padding, Borders, Border, Controller, Gap } from "../UI/libs/WrappedUI.js";
+import { View, Color, StackView, Label, Padding, Borders, Border, Gap, Controller, Corners, RoundedCorner } from "../UI/libs/WrappedUI.js";
 
-export default class BGController extends Controller {
+export default class BGController extends Controller { // todo umbennenn Titledembeddedcontroller oder eine klasse
 
     get titleLabel() {
         return this._titleLabel;
@@ -55,7 +55,9 @@ export default class BGController extends Controller {
     _createView() {
         const view = super._createView();
         view.backgroundColor = Color.white;
+        view.corners = Corners.all(new RoundedCorner("15px"));
         view.overflow = View.Overflow.hidden;
+        view.position = View.Position.relative;
 
         const headerView = this._createHeaderView();
         view.addView(headerView);
@@ -71,6 +73,7 @@ export default class BGController extends Controller {
 
     _createContentView() {
         const stackView = new StackView(StackView.Axis.vertical, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.stretch);
+        //stackView.position = StackView.Position.relative;
         //stackView.grow = "1";
 
         return stackView;

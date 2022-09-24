@@ -2,21 +2,29 @@
 
 import AppWriteAuthentication from "../AppWrite/AppWriteAuthentication.js";
 import BGIndexController from "./BGIndexController.js";
-import { TextField, Border, Borders, BoxShadow, Color, Corners, Label, Padding, RoundedCorner, StackView, View, Gap, Margin, Button, RootController } from "../UI/libs/WrappedUI.js";
+import { TextField, Border, Borders, BoxShadow, Color, Corners, Label, Padding, RoundedCorner, StackView, View, Gap, Margin, Button, Controller } from "../UI/libs/WrappedUI.js";
 import image from "../../public/muneeb-syed-x9NfeD3FpsE-blur-10-unsplash.jpg";
 
-export default class BGAuthController extends RootController {
+export default class BGAuthenticationController extends Controller {
 
-    constructor(mode = BGAuthController.Mode.login) {
+    constructor(mode = BGAuthenticationController.Mode.login) {
         super();
 
         this.mode = mode;
     }
 
+    static get LOGIN_BUTTON_HINT_TEXT() {
+        return "Anmelden";
+    }
+
+    static get REGISTER_BUTTON_HINT_TEXT() {
+        return "Registrieren";
+    }
+
     static get Mode() {
         return Object.freeze({
-            login: "Anmelden",
-            register: "Registrieren"
+            login: "login",
+            register: "register"
         });
     }
 
@@ -203,77 +211,69 @@ export default class BGAuthController extends RootController {
         return label;
     }
 
-    _createNameTextField() {
+    _createTextField() {
         const textField = new TextField();
-        //textField.backgroundColor = Color.white;
-        //textField.corners = Corners.all(new RoundedCorner("10px"));
         textField.fontFamily = TextField.FontFamily.sansSerif;
         textField.margin = Margin.zero;
         textField.fontSize = "17px";
         textField.padding = Padding.axes("10px", "7px");
-        textField.placeholder = "name";
-        textField.borders = Borders.unset;//  all(new Border(Color.darkGreen, "2px"));
+        textField.borders = Borders.all(Border.none);
+        textField.corners = Corners.all(new RoundedCorner("1px"));
+
+        return textField;
+    }
+
+    _createNameTextField() {
+        const textField = this._createTextField();
+        textField.placeholder = "Name";
 
         return textField;
     }
 
     _createPasswordTextField() {
-        const textField = new TextField();
+        const textField = this._createTextField();
+        textField.placeholder = "Passwort";
         textField.textInputType = TextField.TextInputType.password;
-        textField.margin = Margin.zero;
-        //textField.backgroundColor = Color.white;
-        //textField.corners = Corners.all(new RoundedCorner("10px"));
-        textField.fontFamily = TextField.FontFamily.sansSerif;
-        textField.fontSize = "17px";
-        textField.padding = Padding.axes("10px", "7px");
-        textField.placeholder = "password";
         //textField.borders = Borders.all(new Border(Color.darkGreen, "2px"));
 
         return textField;
     }
 
     _createMailTextField() {
-        const textField = new TextField();
-        textField.textInputType = TextField.TextInputType.email;
-        textField.margin = Margin.zero;
-        //textField.backgroundColor = Color.white;
-        //textField.corners = Corners.all(new RoundedCorner("10px"));
-        textField.fontFamily = TextField.FontFamily.sansSerif;
-        textField.fontSize = "17px";
-        textField.padding = Padding.axes("10px", "7px");
-        textField.placeholder = "mail";
-        //textField.borders = Borders.all(new Border(Color.darkGreen, "2px"));
+        const textField = this._createTextField();
+        textField.placeholder = "Mail";
+        textField.textInputType = TextField.TextInputType.mail;
 
         return textField;
     }
 
-    _createModeButton() {
+    _createButton() {
         const button = new Button();
-
-        button.text = "modeButton";
-        button.color = Color.white;
         button.fontFamily = Button.FontFamily.sansSerif;
-        button.fontSize = "15px";
         button.padding = Padding.axes("15px", "5px");
+        button.corners = Corners.all(new RoundedCorner("10px"));
+        button.fontSize = "15px";
+
+        return button;
+    }
+
+    _createModeButton() {
+        const button = this._createButton();
+
+        button.color = Color.white;
         button.backgroundColor = Color.transparent;
         button.borders = Borders.all(Border.none);
-        button.corners = Corners.all(new RoundedCorner("10px"));
         button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._switchMode.bind(this));
 
         return button;
     }
 
     _createSubmitButton() { //Todo eine methode createbutton und dann hier nur noch die custom actions, viel duplizierter code
-        const button = new Button();
+        const button = this._createButton();
 
-        button.text = "submitButton";
         button.color = Color.darkGreen;
-        button.fontFamily = Button.FontFamily.sansSerif;
-        button.fontSize = "15px";
-        button.padding = Padding.axes("15px", "5px");
         button.backgroundColor = Color.white;
         button.borders = Borders.all(new Border(Color.darkGreen, "2px"));
-        button.corners = Corners.all(new RoundedCorner("10px"));
         button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._submit.bind(this));
 
         return button;
@@ -281,15 +281,15 @@ export default class BGAuthController extends RootController {
 
     _updateMode() {
         switch (this.mode) { // Todo des kann noch gekürzt werden wenn da nichts mehr dazukommt
-            case BGAuthController.Mode.login:
+            case BGAuthenticationController.Mode.login:
                 this.nameTextField.isHidden = true;
-                this.modeHint = BGAuthController.Mode.register;
-                this.submitHint = BGAuthController.Mode.login;
+                this.modeHint = BGAuthenticationController.REGISTER_BUTTON_HINT_TEXT;
+                this.submitHint = BGAuthenticationController.LOGIN_BUTTON_HINT_TEXT;
                 break;
-            case BGAuthController.Mode.register:
+            case BGAuthenticationController.Mode.register:
                 this.nameTextField.isHidden = false;
-                this.modeHint = BGAuthController.Mode.login;
-                this.submitHint = BGAuthController.Mode.register;
+                this.modeHint = BGAuthenticationController.LOGIN_BUTTON_HINT_TEXT;
+                this.submitHint = BGAuthenticationController.REGISTER_BUTTON_HINT_TEXT;
                 break;
             default:
                 throw new Error("Unsupported mode");
@@ -297,7 +297,7 @@ export default class BGAuthController extends RootController {
     }
 
     _switchMode() {
-        this.mode = this.mode === BGAuthController.Mode.login ? BGAuthController.Mode.register : BGAuthController.Mode.login;
+        this.mode = this.mode === BGAuthenticationController.Mode.login ? BGAuthenticationController.Mode.register : BGAuthenticationController.Mode.login;
     }
 
     async _submit() {
@@ -305,16 +305,16 @@ export default class BGAuthController extends RootController {
         contentView.isDisabled = true;
         try {
             switch (this.mode) { // Todo des kann noch gekürzt werden wenn da nichts mehr dazukommt
-                case BGAuthController.Mode.login: // todo validate
+                case BGAuthenticationController.Mode.login: // todo validate
                     await AppWriteAuthentication.sharedInstance.login(this.email, this.password);
                     break;
-                case BGAuthController.Mode.register:
+                case BGAuthenticationController.Mode.register:
                     await AppWriteAuthentication.sharedInstance.register(this.email, this.password, this.name);
                     break;
                 default:
                     throw new Error("Unsupported mode");
             }
-            this.addController(new BGIndexController());
+            this.removeFromParentController();
         }
         catch (error) {
             console.log(error);

@@ -28,25 +28,7 @@ export default class BGMemberCreationController extends BGItemCreationController
         this._friendView = friendView;
         view.addView(friendView);
 
-        const cancelButton = this._createCancelButton();
-        view.addView(cancelButton);
-        this._cancelButton = cancelButton;
-
         return view;
-    }
-
-    _createCancelButton() {
-        const button = new Button();
-        button.borders = Borders.all(new Border(Color.green, "2px"));
-        button.backgroundColor = Color.darkGreen;
-        button.color = Color.white;
-        button.fontSize = "13px";
-        button.padding = Padding.all("5px");
-        button.text = "cancel";
-        button.corners = Corners.all(new RoundedCorner("10px"))
-        button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onConfigurationCancelled.bind(this));
-
-        return button;
     }
 
     _createFriendView() {
@@ -62,16 +44,7 @@ export default class BGMemberCreationController extends BGItemCreationController
 
 
     _onFriendSubmit(event) {
-        const mail = event.data.name;
-
-        (async () => {
-            const client = AppWriteClient.sharedInstance.client;
-            const teams = new Teams(client);
-
-            const membership = await teams.createMembership(this.containerId, mail, [], AppWriteConfig.APPLICATION_URL);
-
-            console.log(membership);
-            this._onConfigurationFinished(this);
-        })();
+        const mail = event.data.name; // todo von name in value umbennen
+        this._onConfigurationFinished(mail);
     }
 }

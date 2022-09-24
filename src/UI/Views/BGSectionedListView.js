@@ -22,34 +22,34 @@ export default class BGSectionedListView extends BGListView {
 
     constructor(itemViewClass, headerViewClass) {
         super(itemViewClass);
-        this._sectionViews = []; //todo default fdallback class? [new headerViewClass()] oder einfach itemViews benutzen
+        this._itemViews = []; //todo default fdallback class? [new headerViewClass()] oder einfach itemViews benutzen
 
         this.headerViewClass = headerViewClass;
     }
 
     get sectionInset() {
-        const sectionViews = this._sectionViews;
+        const sectionViews = this._itemViews;
         if (sectionViews.length < 1) return;
 
         return sectionViews[0].gap;
     }
 
     set sectionInset(value) {
-        this._sectionViews.forEach(sectionView => sectionView.gap = value);
+        this._itemViews.forEach(sectionView => sectionView.gap = value);
     }
 
     get sections() {
-        return this._sectionViews.map(sectionView => sectionView.section);
+        return this._itemViews.map(sectionView => sectionView.section);
     }
 
     set sections(value) {
-        this._sectionViews.forEach(sectionView => sectionView.removeFromParentView());
-        this._sectionViews = []; //todo default fdallback class? [new headerViewClass()]
+        this._itemViews.forEach(sectionView => sectionView.removeFromParentView());
+        this._itemViews = []; //todo default fdallback class? [new headerViewClass()]
         value.forEach(section => this._addSectionView(section));
     }
 
     get items() {
-        return this.sections.map(section => section.items).flat();
+        return this.sections.flatMap(section => section.items);// map(section => section.items).flat();
     }
 
     set items(value) {
@@ -77,7 +77,7 @@ export default class BGSectionedListView extends BGListView {
     }
 
     _addSectionView(section) {
-        const sectionViews = this._sectionViews;
+        const sectionViews = this._itemViews;
         const headerViewClass = this._headerViewClass;
         if (headerViewClass === undefined) throw new Error("A class must be registered prior to header view instanciation");
 
@@ -98,6 +98,8 @@ export default class BGSectionedListView extends BGListView {
         this.addView(sectionView);
     }
 
+
+
     _onSectionItemViewCreated(event) {
         const itemView = event.data;
 
@@ -110,18 +112,18 @@ export default class BGSectionedListView extends BGListView {
     }
 
     removeItem(item) {
-        this._sectionViews.forEach(sectionView => sectionView.removeItem(item));
+        this._itemViews.forEach(sectionView => sectionView.removeItem(item));
     }
 
     updateItem(item, newItem) {
-        this._sectionViews.forEach(sectionView => sectionView.updateItem(item, newItem));
+        this._itemViews.forEach(sectionView => sectionView.updateItem(item, newItem));
     }
 
     _addItemView(item) {
-        const sectionViews = this._sectionViews;
+        const sectionViews = this._itemViews;
         let sectionView = sectionViews.find(sectionView => sectionView.data === item.section); //todo oder über id matchen 
         if (sectionView === undefined) {
-            const section = new BGSectionedListViewSectionData("default", 0, 0, [item]);
+            const section = new BGSectionedListViewSectionData(undefined, 0, 0, [item]);
             this.addSection(section);
         } else {
             sectionView._addItemView(item); // todo wenn einzeiler löschen, dann hier auch nur addItem

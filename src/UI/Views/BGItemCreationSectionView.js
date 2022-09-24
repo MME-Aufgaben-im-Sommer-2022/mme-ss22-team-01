@@ -18,6 +18,7 @@ export default class BGItemCreationSectionView extends StackView {
         const contentView = this._createContentView();
         this._contentView = contentView;
         this.addView(contentView);
+
     }
 
     get contentView() {
@@ -144,10 +145,16 @@ export default class BGItemCreationSectionView extends StackView {
     }
 
     _onNameChange(event) {
+        console.log(event);
+    }
 
+    _validate() {
+        return this.nameTextField.validate();
     }
 
     _onButtonClicked() {
+        if (this._validate() === false) return;
+
         const event = new Event(BGItemCreationSectionView.ENTRY_COMPLETE_NOTIFICATION_TYPE, this);
         this.notifyAll(event);
     }
@@ -155,10 +162,13 @@ export default class BGItemCreationSectionView extends StackView {
     _createNameTextField() {
         const textField = new TextField();
 
+        textField.isRequired = true;
         textField.fontFamily = TextField.FontFamily.sansSerif;
         textField.padding = Padding.axes("5px", "5px");
         textField.placeholder = "Name";
         textField.backgroundColor = Color.transparent;
+        textField.maxLength = 128;
+        textField.minLength = 4;
         textField.fontSize = "15px";
         textField.borders = Borders.all(Border.none); //todo dafür static get
         textField.addEventListener(TextField.TEXT_FIELD_CHANGE_NOTIFICATION_TYPE, this._onNameChange.bind(this));

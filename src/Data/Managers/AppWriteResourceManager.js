@@ -36,7 +36,8 @@ export default class AppWriteResourceManager extends Observable {
     }
 
     removeObservers() {
-        this.observers.forEach(unsubscribe => unsubscribe());
+        const observers = this.observers;
+        observers.splice(0, observers.length).forEach(unsubscribe => unsubscribe());
     }
 
     _configure() {
@@ -44,10 +45,10 @@ export default class AppWriteResourceManager extends Observable {
     }
 
     synchronize(filter) {
-        this.loadResources(filter).then((resources) => {
+        this.loadResources(filter).then(resources => {
             this._didLoadResources(resources);
             this.observe(filter);
-        }, (error) => { throw error });
+        }, error => { throw error });
     }
 
     invalidate() {

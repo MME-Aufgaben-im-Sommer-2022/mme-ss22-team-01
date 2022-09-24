@@ -30,7 +30,7 @@ export default class BGTeamCreationSectionView extends BGItemCreationSectionView
 
         const contactLabel = new BGIconLabel();
         this._contactLabel = contactLabel;
-        leadingContainer.addViewBefore(contactLabel, this._nameTextField);
+        leadingContainer.addViewBefore(contactLabel, this.nameTextField);
 
         return leadingContainer;
     }

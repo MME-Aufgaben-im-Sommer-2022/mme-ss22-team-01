@@ -31,27 +31,11 @@ export default class AppWriteAuthentication extends Observable { // Todo email v
         this._createAccount();
     }
 
-    async prepare() { // Todo checken ob man sich session sparen kann
+    async synchronize() { // Todo checken ob man sich session sparen kann
         const account = this.account;
         
-        try {
-            await account.get();
-            // already logged it
-            console.log("session active");
-          } catch(e) {
-            if(e.code == 401) {
-              // not logged int
-              console.log("no session active | not logged in");
-            } else {
-              // might be connection error or other errors
-            }
-          }
-
-        // Todo fetch last session auch über eine browser session hinweg
-
-        //console.log(this.account);
-        //his._user = await account.get();
-        //this._session = await account.getSession("current");
+        this._user = await account.get();
+        this._session = await account.getSession("current");
     }
 
     get user() {

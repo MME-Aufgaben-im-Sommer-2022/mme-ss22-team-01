@@ -4,14 +4,14 @@ import { Border, Borders, Color, Gap, Margin, Padding, Select, StackView, TextAr
 import BGItemCreationSectionView from "./BGItemCreationSectionView.js";
 
 export default class BGChallengeCreationSectionView extends BGItemCreationSectionView {
-    constructor(){
+    constructor() {
         super();
-    }  
+    }
 
     get descriptionTextArea() {
         return this._descriptionTextArea;
     }
-    
+
     get description() {
         return this.descriptionTextArea.text;
     }
@@ -46,20 +46,20 @@ export default class BGChallengeCreationSectionView extends BGItemCreationSectio
         const tagContainerView = this._createTagContainerView();
         stackView.addView(tagContainerView);
         this._tagContainerView = tagContainerView;
-        
+
         return stackView;
     }
-/*
-    _createTrailingContainer() {
-        const trailingContainer = super._createTrailingContainer();
-
-        const startButton = this._createButton();
-        this._startButton = startButton;
-        trailingContainer.addView(startButton);
-
-        return trailingContainer;
-    }
-*/
+    /*
+        _createTrailingContainer() {
+            const trailingContainer = super._createTrailingContainer();
+    
+            const startButton = this._createButton();
+            this._startButton = startButton;
+            trailingContainer.addView(startButton);
+    
+            return trailingContainer;
+        }
+    */
 
     _createDescriptionTextArea() {
         const textArea = new TextArea();
@@ -70,7 +70,9 @@ export default class BGChallengeCreationSectionView extends BGItemCreationSectio
         textArea.placeholder = "Beschreibung";
         textArea.backgroundColor = Color.transparent;
         textArea.fontSize = "15px";
-//        textArea.grow = "1";
+        textArea.isRequired = true;
+        textArea.maxLength = 512;
+        textArea.minLength = 4;
         textArea.minHeight = "50px";
         textArea.maxHeight = "300px"
         textArea.borders = Borders.all(Border.none); //todo dafür static get
@@ -144,5 +146,9 @@ export default class BGChallengeCreationSectionView extends BGItemCreationSectio
         select.backgroundColor = Color.darkGreen;
 
         return select;
+    }
+
+    _validate() {
+        return super._validate() && this.descriptionTextArea.validate();
     }
 }

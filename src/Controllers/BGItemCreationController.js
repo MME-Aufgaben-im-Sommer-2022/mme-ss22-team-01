@@ -3,9 +3,9 @@
 import { Color, Controller, Padding } from "../UI/libs/WrappedUI.js";
 import { Event } from "../utils/Observable.js";
 
-export default class BGItemCreationController extends Controller {//todo umbennen
-
-    constructor(containerId) {
+export default class BGItemCreationController extends Controller {
+    
+    constructor(containerId) { // todo containerid kann raus
         super();
 
         this._containerId = containerId;
@@ -19,17 +19,8 @@ export default class BGItemCreationController extends Controller {//todo umbenne
         return "finish";
     } //TODO remove classnames from other classes
 
-    static get ITEM_CONFIGURATION_CANCELLED_NOTIFICATION_TYPE() {
-        return "cancel";
-    } //TODO remove classnames from other classes
-
-    _onConfigurationFinished() {
-        const event = new Event(BGItemCreationController.ITEM_CONFIGURATION_FINISHED_NOTIFICATION_TYPE, this);
-        this.notifyAll(event);
-    }
-
-    _onConfigurationCancelled() {
-        const event = new Event(BGItemCreationController.ITEM_CONFIGURATION_CANCELLED_NOTIFICATION_TYPE, this);
+    _onConfigurationFinished(data) {
+        const event = new Event(BGItemCreationController.ITEM_CONFIGURATION_FINISHED_NOTIFICATION_TYPE, data);
         this.notifyAll(event);
     }
 
@@ -40,5 +31,4 @@ export default class BGItemCreationController extends Controller {//todo umbenne
 
         return view;
     }
-
 }

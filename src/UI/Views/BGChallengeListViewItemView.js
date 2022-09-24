@@ -1,5 +1,6 @@
 "use strict";
 
+import AppWriteAuthentication from "../../AppWrite/AppWriteAuthentication.js";
 import { Event } from "../../utils/Observable.js";
 import { Border, Borders, Button, Color, Corners, Gap, InlineBlock, Icon, Label, Margin, Padding, RoundedCorner, StackView, TextView } from "../libs/WrappedUI.js";
 import BGListViewItemView from "./BGListViewItemView.js";
@@ -19,10 +20,15 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         return "cancel";
     }
 
+    static get CHALLENGE_DELETE_NOTIFICATION_TYPE() {
+        return "delete";
+    }
+
     static get ChallengeState() {
         return Object.freeze({
             assigned: "assigned",
-            unassigned: "unassigned"
+            unassigned: "unassigned",
+            expired: "expired"
         });
     }
 
@@ -66,29 +72,6 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         this.textView.text = value;
     }
 
-    /*
-    get tagViews() {
-        return this._tagContainerView.views;
-    }
-
-    set tagViews(value) {
-        const tagContainerView = this._tagContainerView;
-
-        tagContainerView.removeViews();
-        value.forEach(tagView => tagContainerView.addView(tagView));
-    }
-
-    get sButtons() {
-        return this._ButtonContainerView.views;
-    }
-
-    set buttons(value) {
-        const ButtonContainerView = this._ButtonContainerView;
-
-        ButtonContainerView.removeViews();
-        value.forEach(actionButton => actionButtonContainerView.addView(actionButton));
-    }
-*/
     _createView() {
         const view = super._createView();
         view.backgroundColor = new Color(245, 245, 245); // TOdo des noch raus nur test, farbe wird dynamisch gesetzt
@@ -207,8 +190,9 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
     _createTag(text) {
         const label = new Label();
         label.corners = Corners.all(new RoundedCorner("12px"));
-        label.padding = Padding.axes("20px", "2px");
-        label.fontSize = "10px";
+        label.borders = Borders.all(new Border(Color.darkGrey, "1px"));
+        label.padding = Padding.axes("20px", "3px");
+        label.fontSize = "9px";
         label.fontFamily = Label.FontFamily.sansSerif;
         label.text = text;
         label.color = Color.white;
@@ -225,7 +209,7 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
 
     _createScoreTag() {
         const tag = this._createTag();
-        tag.backgroundColor = Color.green;
+        tag.backgroundColor = Color.darkGreen;
 
         return tag;
     }
@@ -250,25 +234,27 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         return this._cancelButton;
     }
 
+    get deleteButton() {
+        return this._deleteButton;
+    }
+
     _createButtonContainerView() { // Todo maybe contact view und diese klasse aus neuer  class erben lassen
         const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceAround, StackView.CrossAxisAlignment.center, Gap.all("20px"));
         stackView.padding = Padding.axes("30px", "10px");
 
         const acceptButton = this._createAcceptButton();
-        const acceptIcon = this._createAcceptIcon();
-        acceptButton.addView(acceptIcon);
         stackView.addView(acceptButton);
         this._acceptButton = acceptButton;
 
+        const deleteButton = this._createDeleteButton();
+        stackView.addView(deleteButton);
+        this._deleteButton = deleteButton;
+
         const finishButton = this._createFinishButton();
-        const finishIcon = this._createFinishIcon();
-        finishButton.addView(finishIcon);
         stackView.addView(finishButton);
         this._finishButton = finishButton;
 
         const cancelButton = this._createCancelButton();
-        const cancelIcon = this._createCancelIcon();
-        cancelButton.addView(cancelIcon);
         stackView.addView(cancelButton);
         this._cancelButton = cancelButton;
 
@@ -277,7 +263,7 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
 
     _createButton() { // todo für icon einfach awesomefont benutzen wenn des hinhaut // STATE EINFÜREN UND BUTTONS MIT VERSCHIENDEN ACTIONS HIDEN. ODER BUTTONCLASS FOR STATE
         const button = new Button();
-        button.borders = Borders.all(new Border(Color.darkGrey));
+        button.borders = Borders.all(new Border(Color.darkGrey, "1px"));
         button.padding = Padding.zero;
         button.corners = Corners.all(new RoundedCorner("100%"));
 
@@ -288,6 +274,18 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         const button = this._createButton();
         button.backgroundColor = Color.transparent;
         button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onAccept.bind(this));
+        const acceptIcon = this._createAcceptIcon();
+        button.addView(acceptIcon);
+
+        return button;
+    }
+
+    _createDeleteButton() {
+        const button = this._createButton();
+        button.backgroundColor = Color.transparent; 
+        button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onDelete.bind(this));
+        const deleteIcon = this._createDeleteIcon();
+        button.addView(deleteIcon);
 
         return button;
     }
@@ -296,6 +294,8 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         const button = this._createButton();
         button.backgroundColor = Color.transparent;
         button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onFinish.bind(this));
+        const finishIcon = this._createFinishIcon();
+        button.addView(finishIcon);
 
         return button;
     }
@@ -304,39 +304,58 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         const button = this._createButton();
         button.backgroundColor = Color.transparent;
         button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onCancel.bind(this));
+        const cancelIcon = this._createCancelIcon();
+        button.addView(cancelIcon);
 
         return button;
     }
 
-    _createAcceptIcon() {
+    _createIcon() {
         const icon = new Icon();
-        icon.classList.add("fa-solid", "fa-circle-arrow-left");
-        icon.color = Color.darkBlue;
+        icon.pointerEvents = Icon.PointerEvents.none;
         icon.fontSize = "25px";
+        icon.classList.add("fa-solid");
+
+        return icon;
+    }
+
+    _createDeleteIcon() {
+        const icon = this._createIcon();
+        icon.classList.add("fa-circle-minus");
+        icon.color = Color.red;
+
+        return icon;
+    }
+
+    _createAcceptIcon() {
+        const icon = this._createIcon();
+        icon.classList.add("fa-circle-arrow-left");
+        icon.color = Color.darkBlue;
+
         return icon;
     }
 
     _createFinishIcon() {
-        const icon = new Icon();
-        icon.classList.add("fa-solid", "fa-circle-check");
-        icon.color = Color.green;
-        icon.fontSize = "25px";
+        const icon = this._createIcon();
+        icon.classList.add("fa-circle-check");
+        icon.color = Color.darkGreen;
+
         return icon;
     }
 
     _createCancelIcon() {
-        const icon = new Icon();
-        icon.classList.add("fa-solid", "fa-circle-xmark");
+        const icon = this._createIcon();
+        icon.classList.add("fa-circle-xmark");
         icon.color = Color.red;
-        icon.fontSize = "25px"
+
         return icon;
     }
 
     _createDividerView() {
         const inlineBlock = new InlineBlock();
-        inlineBlock.width = "2px";
+        inlineBlock.minWidth = "2px";
         inlineBlock.corners = Corners.all(new RoundedCorner("1px"))
-        inlineBlock.backgroundColor = Color.darkGrey;
+        inlineBlock.backgroundColor = Color.lightGrey;
         inlineBlock.margin = Margin.vertical("25px");
 
         return inlineBlock;
@@ -345,18 +364,26 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
     _applyChallengeState() {
         const challengeState = this.challengeState;
 
-
         switch (challengeState) {
             case BGChallengeListViewItemView.ChallengeState.assigned:
                 this.acceptButton.isHidden = true;
                 this.cancelButton.isHidden = false;
                 this.finishButton.isHidden = false;
+                this.deleteButton.isHidden = true;
+                this.expiryTag.isHidden = false;
+                break;
+            case BGChallengeListViewItemView.ChallengeState.expired:
+                this.acceptButton.isHidden = true;
+                this.cancelButton.isHidden = false;
+                this.finishButton.isHidden = true;
+                this.deleteButton.isHidden = true;
                 this.expiryTag.isHidden = false;
                 break;
             case BGChallengeListViewItemView.ChallengeState.unassigned:
                 this.acceptButton.isHidden = false;
                 this.cancelButton.isHidden = true;
                 this.finishButton.isHidden = true;
+                this.deleteButton.isHidden = this._authorIsUser();
                 this.expiryTag.isHidden = true;
                 break;
             default:
@@ -364,6 +391,16 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         }
     }
 
+    _authorIsUser() {
+        const user = AppWriteAuthentication.sharedInstance.user;
+        if (user === undefined) return false;
+        return this.data.author !== user.$id;
+    }
+
+    _onDelete() {
+        const event = new Event(BGChallengeListViewItemView.CHALLENGE_DELETE_NOTIFICATION_TYPE, this);
+        this.notifyAll(event);
+    }
 
     _onAccept() {
         const event = new Event(BGChallengeListViewItemView.CHALLENGE_ACCEPT_NOTIFICATION_TYPE, this);
@@ -388,10 +425,10 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         this.duration = this._formatDuration(data.duration);
         const isExpiring = data.timestamp !== undefined;
         this.score = data.score;
-        this.challengeState = isExpiring ? BGChallengeListViewItemView.ChallengeState.assigned : BGChallengeListViewItemView.ChallengeState.unassigned;
-        let unixTimeStamp = data.timestamp + data.duration;
-        if (isExpiring === true) this.expiry = this._calculateRemainingTime(unixTimeStamp);
-
+        const expiresAt = data.timestamp + data.duration;
+        const currentDate = (new Date()).getTime() / 1000;
+        this.challengeState = isExpiring ? (expiresAt < currentDate) ? BGChallengeListViewItemView.ChallengeState.expired : BGChallengeListViewItemView.ChallengeState.assigned : BGChallengeListViewItemView.ChallengeState.unassigned;
+        if (isExpiring === true) this.expiry = this._calculateRemainingTime(expiresAt);
     }
 
     _formatDuration(duration) {

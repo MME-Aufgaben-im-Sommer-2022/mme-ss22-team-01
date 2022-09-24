@@ -3,10 +3,7 @@
 
 import BGItemCreationController from "./BGItemCreationController.js";
 import BGChallengeCreationSectionView from "../UI/Views/BGChallengeCreationSectionView.js";
-import { Button, Color, Corners, Gap, Padding, RoundedCorner, Borders, Border, View } from "../UI/libs/WrappedUI.js";
-import { Databases } from "appwrite";
-import AppWriteClient from "../AppWrite/AppWriteClient.js";
-import AppWriteConfig from "../AppWrite/AppWriteConfig.js";
+import { Gap, View } from "../UI/libs/WrappedUI.js";
 
 export default class BGChallengeCreationController extends BGItemCreationController {
 
@@ -28,25 +25,7 @@ export default class BGChallengeCreationController extends BGItemCreationControl
         this._challengeView = challengeView;
         view.addView(challengeView);
 
-        const cancelButton = this._createCancelButton();
-        view.addView(cancelButton);
-        this._cancelButton = cancelButton;
-
         return view;
-    }
-
-    _createCancelButton() {
-        const button = new Button();
-        button.borders = Borders.all(new Border(Color.green, "2px"));
-        button.backgroundColor = Color.darkGreen;
-        button.color = Color.white;
-        button.fontSize = "15px";
-        button.padding = Padding.axes("10px", "3px");
-        button.text = "cancel";
-        button.corners = Corners.all(new RoundedCorner("10px"))
-        button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onConfigurationCancelled.bind(this));
-
-        return button;
     }
 
     _createChallengeView() {
@@ -61,30 +40,8 @@ export default class BGChallengeCreationController extends BGItemCreationControl
 
     _onChallengeSubmit(event) {
         const challengeView = event.data;
-        const duration = challengeView.duration;
-        const score = challengeView.score;
-        const name = challengeView.name;
-        const description = challengeView.description;
+        const data = { duration: challengeView.duration, score: challengeView.score, title: challengeView.name, description: challengeView.description };
 
-        (async () => {
-            await this._createChallenge(duration, score, name, description);
-            this._onConfigurationFinished();
-        })();
-
-    }
-
-    async _createChallenge(duration, score, name, description) {
-        const client = AppWriteClient.sharedInstance.client;
-        const databases = new Databases(client, AppWriteConfig.DATABASE_SHARED_ID);
-
-        const containerId = this.containerId;
-
-        // todo überarbeiten 
-
-        await databases.createDocument(AppWriteConfig.DATABASE_SHARED_COLLECTION_CHALLENGES_ID, "unique()", {
-            title: name, description: description, score: score, author: containerId, origin: containerId, duration: duration
-        });
-
-
+        this._onConfigurationFinished(data);
     }
 }

@@ -3,7 +3,7 @@
 export default class AppWriteConfig {
     
     static get UNIQUE_ID() {
-        return "unique()"
+        return "unique()";
     }
 
     static get DATABASE_SHARED_ID() {
@@ -35,6 +35,6 @@ export default class AppWriteConfig {
     }
 
     static get APPLICATION_URL() {
-        return "begreen.software-engineering.education"; // todo https davor?
+        return "begreen.software-engineering.education"; // todo https davor? 
     }
 }

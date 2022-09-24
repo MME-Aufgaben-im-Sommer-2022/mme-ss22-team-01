@@ -1,16 +1,37 @@
 "use strict";
 
-import { Corners, RoundedCorner, Padding, Gap } from "../../UI/libs/WrappedUI.js";
+import { Corners, RoundedCorner, Padding, Gap, View } from "../../UI/libs/WrappedUI.js";
 import BGChallengeListViewItemView from "../../UI/Views/BGChallengeListViewItemView.js";
-import BGListViewController from "./BGListViewController.js";
 import BGSectionedListView from "../../UI/Views/BGSectionedListView.js";
+import BGController from "../BGController.js";
 
-export default class BGSectionedListViewController extends BGListViewController { // ob man den wirklich braucht?
+export default class BGSectionedListViewController extends BGController { // ob man den wirklich braucht?
 
     constructor(itemViewClass, headerViewClass) {
-        super(itemViewClass);
+        super();
 
+        this.itemViewClass = itemViewClass;
         this.headerViewClass = headerViewClass;
+    }
+
+    get listView() {
+        return this._listView;
+    }
+
+    set items(value) {
+        this.listView.items = value;
+    }
+
+    get items() {
+        return this.listView.items;
+    }
+
+    set itemViewClass(value) {
+        this.listView.itemViewClass = value;
+    }
+
+    get itemViewClass() {
+        return this.listView.itemViewClass;
     }
 
     set headerViewClass(value) {
@@ -42,11 +63,23 @@ export default class BGSectionedListViewController extends BGListViewController 
     }
 
     _onItemViewCreated(event) {
-        
+        const itemView = event.data;
+        const index = this.items.length;
+        if (index % 2 === 0) itemView.backgroundColor = new Color(245, 245, 245);
     }
 
     _onItemViewClicked(event) {
         const itemView = event.data;
         console.log(itemView);
+    }
+    
+    _createContentView() {
+        const contentView = super._createContentView();
+        contentView.overflow = View.Overflow.hidden;
+
+        const listView = this._createListView();
+        contentView.addView(listView);
+
+        return contentView;
     }
 }

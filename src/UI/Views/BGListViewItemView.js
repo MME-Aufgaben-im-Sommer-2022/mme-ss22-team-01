@@ -55,7 +55,8 @@ export default class BGListViewItemView extends StackView { // stattdessen artic
     }
 
     _createView() {
-        const contentView = this._createContentView();
+        const contentView = this._createContentView();        
+        this._contentView = contentView;
         this.addView(contentView);
 
         return this;
@@ -65,7 +66,6 @@ export default class BGListViewItemView extends StackView { // stattdessen artic
         const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.center, Gap.all("10px"));
         stackView.grow = "1";
         stackView.addDOMEventListener("click", this.didSelect.bind(this), true);
-        this._contentView = stackView;
 
         return stackView;
     }

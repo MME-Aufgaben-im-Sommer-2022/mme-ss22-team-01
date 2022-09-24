@@ -4,14 +4,6 @@ import BGListViewItemData from "./BGListViewItemData.js";
 
 export default class BGSectionedListViewSectionData extends BGListViewItemData {
 
-    get header() {
-        return this._header;
-    }
-
-    set header(value) {
-        this._header = value;
-    }
-
     get items() {
         return this._items;
     }
@@ -30,11 +22,10 @@ export default class BGSectionedListViewSectionData extends BGListViewItemData {
         return this.items.length < 1;
     }
 
-    constructor(id, createdAt, updatedAt, items, header) {
+    constructor(id, createdAt, updatedAt, items) {
         super(id, createdAt, updatedAt);
         
         this.items = items;
-        this.header = header;
     }
 
     matches(criteria) {

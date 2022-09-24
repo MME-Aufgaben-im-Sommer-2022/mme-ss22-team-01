@@ -1,17 +1,19 @@
 "use strict";
 
-import { View, Color, StackView, Label, Padding, Corners, RoundedCorner, Borders, Border, BoxShadow, Grid, GridInset, Controller, Navigation, Gap, Button } from "../UI/libs/WrappedUI.js";
+import { View, Color, StackView, Label, Padding, Corners, RoundedCorner, Borders, Border, BoxShadow, Grid, GridInset, Controller, Navigation, Gap, Button, RootController } from "../UI/libs/WrappedUI.js";
 import image from "../../public/muneeb-syed-x9NfeD3FpsE-unsplash.jpg";
 
 
-export default class BGRootViewController extends Controller {
+export default class BGRootViewController extends RootController { // todo umbennen zu rootcontroller oder eine klasse als bgindexcontroller
 
-    static get ControllerPosition() {
-        return Object.freeze({
-            topLeft: new GridInset(1, 1, 2, 2),
-            bottomLeft: new GridInset(2, 1, 2, 3),
-            right: new GridInset(1, 2, 3, 3)
-        });
+    constructor() {
+        super();
+
+        this._embeddedControllers = [];
+    }
+
+    get embeddedControllers() {
+        return this._embeddedControllers;
     }
 
     _createTitleView() {
@@ -24,16 +26,16 @@ export default class BGRootViewController extends Controller {
         return stackView;
     }
 
-    embedController(controller, position) {// alten removen
-        /* const values = Object.values(BGRootViewController.ControllerPosition);
- 
-         const value = values.find(value => value === position);
-         if (value === undefined) throw new Error(`Unsupported position: ${position}`);
- */
-        controller.view.gridInset = position;
-        controller.view.corners = Corners.all(new RoundedCorner("15px"));
+    embedController(controller, position) {
+        if (controller.parentController !== undefined) throw new Error("Cannot add controller to more than one parent controller");
 
-        this.addController(controller, this.contentView);
+        this.embeddedControllers.push(controller);
+
+        controller.parentController = this;
+
+        this.contentView.addView(controller.view);
+
+        controller.view.gridInset = position;
     }
 
     get navigationView() {
@@ -175,11 +177,9 @@ export default class BGRootViewController extends Controller {
 
     _createView() {
         const view = super._createView();
-        view.position = View.Position.absolute;
-        view.left = "0px";
-        view.right = "0px";
-        view.bottom = "0px";
-        view.top = "0px";
+        view.backgroundColor = Color.darkGreen;
+        view.backgroundSize = "cover";
+        view.backgroundImage = `url(${image})`;
 
         const navigationView = this._createNavigationView();
         navigationView.zIndex = "1";
@@ -188,10 +188,7 @@ export default class BGRootViewController extends Controller {
 
         const contentView = this._createContentView();
         contentView.grow = "1";
-        contentView.backgroundColor = Color.darkGreen;
-        contentView.backgroundSize = "cover";
-        contentView.backgroundImage = `url(${image})`;
-        
+
         this._contentView = contentView;
         view.addView(contentView);
     }
