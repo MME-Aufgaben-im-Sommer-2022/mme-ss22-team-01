@@ -1,6 +1,6 @@
 "use strict";
 
-import BGContactListViewItemView from "./BGContactListViewItemView";
+import BGContactListViewItemView from "./BGContactListViewItemView.js";
 
 export default class BGContactListViewLeaderboardView extends BGContactListViewItemView {
     _applyData() {

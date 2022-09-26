@@ -104,7 +104,7 @@ export default class AppWriteTeamManager extends AppWriteResourceManager {
     }
 
     async _crateGroup(name) {
-        const team = await this.api.create(AppWriteConfig.UNIQUE_ID, name);
+        const team = await this.api.create(AppWriteConfig.UNIQUE_ID, name, ["owner"]);
 
         return team;
     }
@@ -113,7 +113,7 @@ export default class AppWriteTeamManager extends AppWriteResourceManager {
         const api = this.api;
 
         const team = await api.create(AppWriteConfig.UNIQUE_ID, AppWriteTeamManager.TeamType.chat);
-        await api.createMembership(team.$id, mail, [], `https://${AppWriteConfig.APPLICATION_URL}`); // todo https vielleicht in config aufnehemn! testen
+        await api.createMembership(team.$id, mail, ["owner"], `https://${AppWriteConfig.APPLICATION_URL}`); // todo https vielleicht in config aufnehemn! testen
 
         return team;
     }

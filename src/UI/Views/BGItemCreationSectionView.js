@@ -116,7 +116,7 @@ export default class BGItemCreationSectionView extends StackView {
         const label = new Label();
         label.text = "Header";
         label.fontWeight = Label.FontWeight.bold;
-        label.fontFamily = Label.FontFamily.sansSerif; //TODO dafür default
+        label.fontFamily = Label.FontFamily.sansSerif;
         label.color = Color.darkGreen;
         label.fontSize = "17px";
 
@@ -170,7 +170,7 @@ export default class BGItemCreationSectionView extends StackView {
         textField.maxLength = 128;
         textField.minLength = 4;
         textField.fontSize = "15px";
-        textField.borders = Borders.all(Border.none); //todo dafür static get
+        textField.borders = Borders.all(Border.none);
         textField.addEventListener(TextField.TEXT_FIELD_CHANGE_NOTIFICATION_TYPE, this._onNameChange.bind(this));
         textField.addEventListener(TextField.TEXT_FIELD_KEYPRESS_NOTIFICATION_TYPE, this._onNameChange.bind(this));
         textField.addEventListener(TextField.TEXT_FIELD_PASTE_NOTIFICATION_TYPE, this._onNameChange.bind(this));

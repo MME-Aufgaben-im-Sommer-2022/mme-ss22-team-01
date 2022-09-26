@@ -25,7 +25,7 @@ export default class BGTeamChallengesListViewController extends BGSearchableList
     }
 
     constructor(containerId, listMode = BGChallengesListViewController.ListMode.default) {
-        super(BGChallengeListViewItemView, BGSectionedListViewTextHeaderView, listMode); //Todo die classes noch in statische getter umwandeln, falls gewünscht. Ändern sich ja nie
+        super(BGChallengeListViewItemView, BGSectionedListViewTextHeaderView, listMode);
 
         this._containerId = containerId;
     }
@@ -128,9 +128,7 @@ export default class BGTeamChallengesListViewController extends BGSearchableList
 
     _onItemViewCreated(event) {
         const itemView = event.data;
-        //const index = this.items.length;
-        //console.log(index);
-        //itemView.backgroundColor = (index % 2 === 0) ? new Color(245, 245, 245) : Color.white;
+
         itemView.addEventListener(BGChallengeListViewItemView
             .CHALLENGE_ACCEPT_NOTIFICATION_TYPE, this._onChallengeViewAccepted
                 .bind(this));
@@ -234,37 +232,4 @@ export default class BGTeamChallengesListViewController extends BGSearchableList
         this.searchBar.clear();
         this.updateSections();
     }
-
-
-
-    /*
-        async updateSections(title) {
-            this.startLoading();
-            const containerId = this.containerId;
-    
-            const client = AppWriteClient.sharedInstance.client;
-            const databases = new Databases(client, AppWriteConfig.DATABASE_SHARED_ID);
-    
-            const unassignedSection = new BGSectionedListViewTitledSectionData("unassigned", 0, Number.MIN_SAFE_INTEGER, [], "Verfügbar");
-            const sections = [new BGSectionedListViewTitledSectionData(containerId, 0, Number.MAX_SAFE_INTEGER, [], "Aktiv"), unassignedSection];
-    
-            const assignmentsResult = await databases.listDocuments(AppWriteConfig.DATABASE_SHARED_COLLECTION_ASSIGNMENTS_ID, [Query.equal("assignee", containerId)]); // Todo checken ob des basd oder statt id einfach reference verwenden
-            const filters = (title === undefined || title.length < 1) ? [] : [Query.search("title", title)]
-            const challengesResult = await databases.listDocuments(AppWriteConfig.DATABASE_SHARED_COLLECTION_CHALLENGES_ID, filters); // Todo auch description durchsuchen
-            challengesResult.documents.map(document => {
-                const assignment = assignmentsResult.documents.find(assignment => assignment.challenge === document.$id);
-                if (assignment !== undefined) {
-                    const section = sections.find(section => section.id === assignment.assignee);
-                    if (section === undefined) return;
-                    section.addItem(new BGSectionedListViewChallengeData(document.$id, document.$createdAt, document.$updatedAt, document.title, document.description, document.duration, document.score, document.origin, document.author, assignment.$createdAt));
-                } else {
-                    unassignedSection.addItem(new BGSectionedListViewChallengeData(document.$id, document.$createdAt, document.$updatedAt, document.title, document.description, document.duration, document.score, document.origin, document.author));
-                }
-            });
-    
-            this.sections = sections.filter(section => section.isEmpty === false).sort((sectionA, sectionB) => sectionA.updatedAt < sectionB.updatedAt);
-    
-            this.stopLoading();
-        }
-        */
 }

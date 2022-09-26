@@ -4,7 +4,7 @@ import BGSectionedListViewItemData from "./BGSectionedListViewItemData.js";
 
 export default class BGListViewTeamItemData extends BGSectionedListViewItemData {
 
-    constructor(id, createdAt, updatedAt, name, score, message) {
+    constructor(id, createdAt, updatedAt, name, score, message = "") {
         super(id, createdAt, updatedAt);
 
         this._score = score;

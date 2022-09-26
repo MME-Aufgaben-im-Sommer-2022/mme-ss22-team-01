@@ -4,7 +4,7 @@ import AppWriteAuthentication from "../AppWrite/AppWriteAuthentication.js";
 import BGContactListViewTeamItemView from "../UI/Views/BGContactListViewTeamItemView.js";
 import BGListViewTeamItemData from "../Data/Models/BGListViewTeamItemData.js";
 import BGMemberCreationController from "./BGMemberCreationController.js";
-import BGSectionedListViewTitledSectionData from "../Data/Models/BGSectionedListViewTitledSectionData.js";
+import BGSectionedListViewSectionData from "../Data/Models/BGSectionedListViewSectionData.js";
 import { Color } from "../UI/libs/WrappedUI.js";
 import BGSearchableListViewController from "./BGSearchableListViewController.js";
 import AppWriteMembershipManager from "../Data/Managers/AppWriteMembershipManager.js";
@@ -17,7 +17,7 @@ export default class BGMembersListViewController extends BGSearchableListViewCon
     }
 
     constructor(teamId, listMode = BGMembersListViewController.ListMode.default) {
-        super(BGContactListViewTeamItemView, BGListViewItemView, listMode); //Todo die classes noch in statische getter umwandeln, falls gewünscht. Ändern sich ja nie
+        super(BGContactListViewTeamItemView, BGListViewItemView, listMode);
 
         this._teamId = teamId;
     }
@@ -27,7 +27,7 @@ export default class BGMembersListViewController extends BGSearchableListViewCon
     }
 
     setup() {
-        this._membershipManager = this._createMembershipManager(); // Todo: in function oder in superklasse gleich rein!
+        this._membershipManager = this._createMembershipManager();
         this.updateSections();
     }
 
@@ -49,7 +49,7 @@ export default class BGMembersListViewController extends BGSearchableListViewCon
         const memberships = await this.membershipManager.loadResources(filter);
 
         const userId = AppWriteAuthentication.sharedInstance.user.$id;
-        this.sections = (memberships.length > 0) ? [new BGSectionedListViewTitledSectionData("members", 0, 0, memberships.filter(membership => membership.userId !== userId).map(membership => new BGListViewTeamItemData(membership.userId, membership.$createdAt, membership.$updatedAt, membership.userName, 0, "")))] : [];
+        this.sections = (memberships.length > 0) ? [new BGSectionedListViewSectionData("members", 0, 0, memberships.filter(membership => membership.userId !== userId).map(membership => new BGListViewTeamItemData(membership.$id, membership.$createdAt, membership.$updatedAt, membership.userName, 0)))] : [];
 
         this.stopLoading();
     }
@@ -61,22 +61,13 @@ export default class BGMembersListViewController extends BGSearchableListViewCon
         itemView.addEventListener(BGContactListViewTeamItemView.ITEM_DELETE_BUTTON_CLICKED_NOTIFICATION_TYPE, this._onItemViewDeleteClicked.bind(this));
     }
 
-    _onItemViewClicked(event) {
-        const itemView = event.data;
-        const item = itemView.data;
-    }
-
     _onSearchTextChangeEnd() {
         const searchText = this.searchText;
 
         let filter = searchText;
         if (searchText.length < 1) filter = undefined;
 
-        console.log("ended");
-
-        (async () => {
-            await this.updateSections(filter);
-        })()
+        this.updateSections(filter);
     }
 
     _onSearchStart() {
@@ -108,7 +99,7 @@ export default class BGMembersListViewController extends BGSearchableListViewCon
 
     async deleteMembership(membershipId) {
         this.startLoading();
-        await this.membershipManager.delete({ membershipId: membershipId, teamId: this.teamId });
+        await this.membershipManager._delete({ teamId: this.teamId, membershipId: membershipId });
         await this.updateSections();
     }
 }

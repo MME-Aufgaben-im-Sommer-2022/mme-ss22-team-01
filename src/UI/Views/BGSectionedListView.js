@@ -22,7 +22,7 @@ export default class BGSectionedListView extends BGListView {
 
     constructor(itemViewClass, headerViewClass) {
         super(itemViewClass);
-        this._itemViews = []; //todo default fdallback class? [new headerViewClass()] oder einfach itemViews benutzen
+        this._itemViews = [];
 
         this.headerViewClass = headerViewClass;
     }
@@ -44,35 +44,21 @@ export default class BGSectionedListView extends BGListView {
 
     set sections(value) {
         this._itemViews.forEach(sectionView => sectionView.removeFromParentView());
-        this._itemViews = []; //todo default fdallback class? [new headerViewClass()]
+        this._itemViews = [];
         value.forEach(section => this._addSectionView(section));
     }
 
     get items() {
-        return this.sections.flatMap(section => section.items);// map(section => section.items).flat();
+        return this.sections.flatMap(section => section.items);
     }
 
     set items(value) {
         this.sections = [];
 
         value.forEach(item => this._addItemView(item));
-        /* Todo geht auch effizienter
-        const sections = this.sections;
-        sections = []; // Todo ineffizient aber schnell, changes in items pro sections ermitteln und ggf löschen und neue hinzufügen
-        value.forEach(item => {
-            let section = sections.find(section => section.id === );
-            if (section === undefined) {
-                section = new BGSectionedListViewSectionData(`${BGListViewController._fallbackSectionCounter++}`, 0, 0, item);
-                section.addItem(item);
-                this.addSection(section);
-                return;
-            }
-            item.section = section;
-        });
-        */
     }
 
-    addSection(section) { // Todo macht der einzeiler sinn?
+    addSection(section) {
         this._addSectionView(section);
     }
 
@@ -85,10 +71,10 @@ export default class BGSectionedListView extends BGListView {
         if (itemViewClass === undefined) throw new Error("A class must be registered prior to item view instanciation");
 
         const sectionView = new BGSectionedListViewSectionView(headerViewClass, itemViewClass);
-        sectionView.listView = this; //Todo review
+        sectionView.listView = this;
 
         this._onSectionViewCreated(sectionView);
-        sectionView.addEventListener(BGListView.ITEM_VIEW_CREATED_NOTIFICATION_TYPE, this._onSectionItemViewCreated.bind(this)); //todo bind needed? [kommt möglicherweise öfter ohne todo vor]
+        sectionView.addEventListener(BGListView.ITEM_VIEW_CREATED_NOTIFICATION_TYPE, this._onSectionItemViewCreated.bind(this));
         sectionView.addEventListener(BGListViewItemView.ITEM_VIEW_SELECTED_NOTIFICATION_TYPE, this._onItemViewSelected.bind(this));
 
         sectionView.section = section;
@@ -121,12 +107,9 @@ export default class BGSectionedListView extends BGListView {
 
     _addItemView(item) {
         const sectionViews = this._itemViews;
-        let sectionView = sectionViews.find(sectionView => sectionView.data === item.section); //todo oder über id matchen 
-        if (sectionView === undefined) {
-            const section = new BGSectionedListViewSectionData(undefined, 0, 0, [item]);
-            this.addSection(section);
-        } else {
-            sectionView._addItemView(item); // todo wenn einzeiler löschen, dann hier auch nur addItem
-        }
+        let sectionView = sectionViews.find(sectionView => sectionView.data === item.section);
+        if (sectionView === undefined) this.addSection(new BGSectionedListViewSectionData(undefined, 0, 0, [item]));
+        else sectionView._addItemView(item);
+            
     }
 }

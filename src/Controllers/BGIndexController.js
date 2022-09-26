@@ -35,8 +35,6 @@ export default class BGIndexController extends RootController {
 
     set mode(value) {
         this._mode = value;
-
-        // this._applyMode();
     }
 
     _createIconButton() {
@@ -77,9 +75,7 @@ export default class BGIndexController extends RootController {
 
         switch (mode) {
             case BGIndexController.Mode.start:
-                (async () => {
-                    await AppWriteAuthentication.sharedInstance.logout();
-                })()
+                AppWriteAuthentication.sharedInstance.logout();
                 break;
             case BGIndexController.Mode.detail:
                 break;
@@ -129,23 +125,6 @@ export default class BGIndexController extends RootController {
         return this._previewManager;
     }
 
-    /*
-    _applyMode() {
-        const mode = this.mode;
-
-        switch (mode) {
-            case BGIndexController.Mode.start:
-                this.controllers.forEach(parentController => parentController.controllers.forEach(controller => controller.removeFromParentController())); //todo removeStacked
-                break;
-            case BGIndexController.Mode.group:
-                const memberListViewController = new BGMembersListViewController
-            case BGIndexController.Mode.chat:
-                break;
-            default:
-                throw new Error(`Unsupported mode: ${mode}`);
-        }
-    }*/
-
     embedController(controller, position) {
         if (controller.parentController !== undefined) throw new Error("Cannot add controller to more than one parent controller");
 
@@ -174,8 +153,8 @@ export default class BGIndexController extends RootController {
 
     removeStackedControllers() {
         this.mode = BGIndexController.Mode.start;
-        this.embeddedControllers.forEach(controller => controller.removeControllers()); // todo da wieder slice oder splice
-        //this._embeddedControllers = []; // todo des noch elegantter des noch checken
+        this.embeddedControllers.forEach(controller => controller.removeControllers());
+
         this._setIcon();
         this._updateScore();
 
@@ -225,16 +204,13 @@ export default class BGIndexController extends RootController {
     }
 
     presentChat(team) {
-        //if (this.embeddedControllers.length > 3) return;
-        this.removeStackedControllers(); // todo braucht man nicht
+        this.removeStackedControllers();
         this.mode = BGIndexController.Mode.detail;
 
         const id = team.id;
         this.title = team.name;
         this._addCloseIcon();
         this._updateScore(id);
-
-        //this.mode = BGIndexController.Mode.group;
 
         const challengesListViewController = this._createTeamChallengesListViewController(id);
         challengesListViewController.addEventListener(BGTeamChallengesListViewController.SCORE_CHANGE_NOTIFICATION_TYPE, this._onScoreChanged.bind(this));
@@ -247,7 +223,6 @@ export default class BGIndexController extends RootController {
     }
 
     presentGroup(team) {
-        //if (this.embeddedControllers.length > 3) return;
         this.presentChat(team);
 
         const membersListViewController = this._createMembersListViewController(team.id);
@@ -276,10 +251,6 @@ export default class BGIndexController extends RootController {
         challengesListViewController.title = "Challenges";
 
         return challengesListViewController;
-    }
-
-    _onStateChange() { // todo kann vermutlich raus
-        //todo den controllern hier sagen, dass sie updaten können, wenn authenticated
     }
 
     _setIcon() {
@@ -347,23 +318,13 @@ export default class BGIndexController extends RootController {
     _onViewsCreated() {
         this._embeddedControllers = [];
 
-        this._ensureAuthentication(); // in onViewloaded 
+        this._ensureAuthentication();
 
         this._createControllers();
     }
 
     _onPresentationStateChange() {
-        const presentationState = this.presentationState;
-
-        switch (presentationState) {
-            case BGIndexController.PresentationState.presented:
-                if (AppWriteAuthentication.sharedInstance.isAuthenticated === true) this._setup();
-            case BGIndexController.PresentationState.presenting:
-                //this.embeddedControllers.forEach(embeddedController => embeddedController.disable());
-                break;
-            default:
-                throw new Error(`Unsupported presentation state: ${presentationState}`);
-        }
+        if (this.presentationState === BGIndexController.PresentationState.presented && AppWriteAuthentication.sharedInstance.isAuthenticated === true) this._setup();
     }
 
     _setup() {

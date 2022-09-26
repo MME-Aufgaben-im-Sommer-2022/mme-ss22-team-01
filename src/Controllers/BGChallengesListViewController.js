@@ -9,7 +9,7 @@ import BGTeamChallengesListViewController from "./BGTeamChallengesListViewContro
 export default class BGChallengesListViewController extends BGTeamChallengesListViewController {
 
     constructor(listMode = BGChallengesListViewController.ListMode.default) {
-        super(undefined, listMode); //Todo die classes noch in statische getter umwandeln, falls gewünscht. Ändern sich ja nie
+        super(undefined, listMode);
     }
 
     get containerId() {

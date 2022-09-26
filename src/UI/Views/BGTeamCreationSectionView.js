@@ -11,7 +11,7 @@ export default class BGTeamCreationSectionView extends BGItemCreationSectionView
 
     set name(value) {
         super.name = value;
-        this.contactLabel.text = value[0].toUpperCase(); // TODO class ContactLabel
+        this.contactLabel.text = value[0].toUpperCase();
     }
 
     get name() {

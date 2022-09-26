@@ -51,7 +51,7 @@ export default class BGSearchableListViewController extends BGRemoteSectionedLis
     set listMode(value) {
         this._listMode = value;
 
-        this._applyListMode(); //Todo die hier statt setter?
+        this._applyListMode();
     }
 
     get searchBar() {
@@ -96,7 +96,6 @@ export default class BGSearchableListViewController extends BGRemoteSectionedLis
         textField.backgroundColor = Color.transparent;
         textField.borders = Borders.all(new Border(Color.darkGreen, "2px"));
         textField.corners = Corners.all(new RoundedCorner("7px"));
-        //textField.isDisabled = true;
         textField.grow = "1";
         textField.addEventListener(TextField.TEXT_FIELD_CHANGE_NOTIFICATION_TYPE, this._onSearchTextChange.bind(this));
         textField.addEventListener(TextField.TEXT_FIELD_KEYPRESS_NOTIFICATION_TYPE, this._onSearchTextChange.bind(this));
@@ -228,18 +227,12 @@ export default class BGSearchableListViewController extends BGRemoteSectionedLis
     }
 
     _toggleSearchBar(show) {
-        //this.headerView.views.forEach(view => view.isHidden = show);
         this.titleLabel.isHidden = show;
         this.searchButton.isHidden = show;
         this.hideSearchBarButton.isHidden = !show;
         this.searchBar.isHidden = !show;
     }
-
-    /*
-    toggleMode() {
-        this.listMode = this.listMode === BGSearchableListViewController.ListMode.default ? BGSearchableListViewController.ListMode.searching : BGSearchableListViewController.ListMode.default;
-    }*/
-
+    
     _applyListMode() {
         const listMode = this._listMode;
 
@@ -312,7 +305,7 @@ export default class BGSearchableListViewController extends BGRemoteSectionedLis
     }
 
     showItemCreationController() {
-        this.hideItemCreationController(); // todo kollisiuon mit teams
+        this.hideItemCreationController();
 
         this.hideSearchBar();
         this.searchButton.isHidden = true;

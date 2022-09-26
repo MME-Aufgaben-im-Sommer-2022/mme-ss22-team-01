@@ -1,8 +1,5 @@
 "use strict";
 
-import { Teams } from "appwrite";
-import AppWriteClient from "../AppWrite/AppWriteClient.js";
-import AppWriteConfig from "../AppWrite/AppWriteConfig.js";
 import BGMemberCreationController from "./BGMemberCreationController.js";
 import BGTeamCreationSectionView from "../UI/Views/BGTeamCreationSectionView.js";
 import AppWriteTeamManager from "../Data/Managers/AppWriteTeamManager.js";
@@ -24,7 +21,7 @@ export default class BGTeamCreationController extends BGMemberCreationController
     }
 
     _createGroupView() {
-        const sectionView = new BGTeamCreationSectionView(); //todo umbennen
+        const sectionView = new BGTeamCreationSectionView();
         sectionView.title = "Gruppe erstellen";
         sectionView.hint = "erstellen";
         sectionView.placeholder = "Gruppenname";

@@ -1,7 +1,7 @@
 "use strict";
 
 import { Event } from "../../utils/Observable.js";
-import { Border, Borders, Button, Color, Corners, Gap, Icon, Label, Padding, RoundedCorner, StackView, View } from "../libs/WrappedUI.js";
+import { Border, Borders, Button, Color, Corners, Gap, Icon, Label, Padding, RoundedCorner, StackView } from "../libs/WrappedUI.js";
 import BGContactListViewItemView from "./BGContactListViewItemView.js";
 
 export default class BGContactListViewTeamItemView extends BGContactListViewItemView {

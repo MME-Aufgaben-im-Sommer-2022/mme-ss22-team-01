@@ -1,11 +1,8 @@
 "use strict";
 
-import { Teams } from "appwrite";
-import AppWriteClient from "../AppWrite/AppWriteClient.js";
-import AppWriteConfig from "../AppWrite/AppWriteConfig.js";
 import BGItemCreationController from "./BGItemCreationController.js";
 import BGTeamCreationSectionView from "../UI/Views/BGTeamCreationSectionView.js";
-import { Button, Color, Corners, Gap, Padding, RoundedCorner, Borders, Border, TextField, View } from "../UI/libs/WrappedUI.js";
+import { Gap, TextField, View } from "../UI/libs/WrappedUI.js";
 
 
 export default class BGMemberCreationController extends BGItemCreationController {
@@ -32,7 +29,7 @@ export default class BGMemberCreationController extends BGItemCreationController
     }
 
     _createFriendView() {
-        const sectionView = new BGTeamCreationSectionView(); //todo umbennen
+        const sectionView = new BGTeamCreationSectionView();
         sectionView.title = "Freund hinzufügen";
         sectionView.hint = "hinzufügen";
         sectionView.placeholder = "E-Mail";
@@ -42,9 +39,8 @@ export default class BGMemberCreationController extends BGItemCreationController
         return sectionView;
     }
 
-
     _onFriendSubmit(event) {
-        const mail = event.data.name; // todo von name in value umbennen
+        const mail = event.data.name;
         this._onConfigurationFinished(mail);
     }
 }

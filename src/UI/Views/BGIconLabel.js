@@ -1,7 +1,7 @@
-import { Label, Color, Padding, Corners, RoundedCorner} from "../libs/WrappedUI.js";
+import { Label, Color, Padding, Corners, RoundedCorner } from "../libs/WrappedUI.js";
 
 export default class BGIconLabel extends Label {
-    constructor(){
+    constructor() {
         super();
         this.fontFamily = Label.FontFamily.sansSerif;
         this.color = Color.white;
@@ -17,9 +17,8 @@ export default class BGIconLabel extends Label {
         this.text = "N";
     }
 
-    _recalculateSize(){
+    _recalculateSize() {
         this.minWidth = "19px";
         this.minHeight = "19px";
-        //console.log(window.getComputedStyle(this));
     }
 }

@@ -9,7 +9,7 @@ export default class BGSectionedListViewSectionData extends BGListViewItemData {
     }
 
     set items(value) {
-        value.forEach(item => item.section = this); //todo addItem
+        value.forEach(item => item.section = this);
         this._items = value;
     }
 
@@ -26,9 +26,5 @@ export default class BGSectionedListViewSectionData extends BGListViewItemData {
         super(id, createdAt, updatedAt);
         
         this.items = items;
-    }
-
-    matches(criteria) {
-        return this.items.some(item => item.matches(criteria) === true);
     }
 }

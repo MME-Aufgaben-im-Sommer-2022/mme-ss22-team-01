@@ -19,7 +19,7 @@ export default class BGSectionedListViewSectionView extends BGListView {
     }
 
     get section() {
-        return this._section; // Todo data deriven (kein muss)
+        return this._section;
     }
 
     set section(value) {

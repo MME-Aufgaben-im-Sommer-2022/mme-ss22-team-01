@@ -17,7 +17,6 @@ export default class BGChallengeCreationController extends BGItemCreationControl
 
     _createView() {
         const view = super._createView();
-
         view.gap = Gap.all("10px");
         view.overflow = View.Overflow.hidden;
 
@@ -29,7 +28,7 @@ export default class BGChallengeCreationController extends BGItemCreationControl
     }
 
     _createChallengeView() {
-        const challengeView = new BGChallengeCreationSectionView(); //TODO erstellen; 
+        const challengeView = new BGChallengeCreationSectionView();
         challengeView.title = "Challenge erstellen";
         challengeView.hint = "erstellen";
         challengeView.placeholder = "Titel";

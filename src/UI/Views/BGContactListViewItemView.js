@@ -39,7 +39,7 @@ export default class BGContactListViewItemView extends BGListViewItemView {
 
     set name(value) {
         this.nameLabel.text = value;
-        this.contactLabel.text = value[0].toUpperCase(); // TODO class ContactLabel
+        this.contactLabel.text = value[0].toUpperCase();
     }
 
     get detailLabel() {
@@ -82,7 +82,6 @@ export default class BGContactListViewItemView extends BGListViewItemView {
 
     _createInfoView() {
         const stackView = new StackView(StackView.Axis.vertical);
-        //stackView.gap = Gap.all("2px");
 
         const nameLabel = this._createNameLabel();
         this._nameLabel = nameLabel;
@@ -105,7 +104,7 @@ export default class BGContactListViewItemView extends BGListViewItemView {
         return label;
     }
 
-    _applyData() { // Todo den statt setter!
+    _applyData() {
         const data = this._data;
 
         this.name = data.name;

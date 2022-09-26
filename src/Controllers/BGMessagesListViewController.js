@@ -8,10 +8,12 @@ import AppWriteAuthentication from "../AppWrite/AppWriteAuthentication.js";
 import BGRemoteSectionedListViewController from "./BGRemoteSectionedListViewController.js";
 import BGSectionedListViewSectionData from "../Data/Models/BGSectionedListViewTitledSectionData.js";
 import BGMessagesListViewTextHeaderView from "../UI/Views/BGMessagesListViewTextHeaderView.js";
-import BGMessageDocumentManager from "../Data/Managers/BGMessageDocumentManager.js";
 import BGPreviewDocumentManager from "../Data/Managers/BGPreviewDocumentManager.js";
+import AppWriteDocumentManager from "../Data/Managers/AppWriteDocumentManager.js";
+import AppWriteConfig from "../AppWrite/AppWriteConfig.js";
+import AppWriteMembershipManager from "../Data/Managers/AppWriteMembershipManager.js";
 
-export default class BGMessagesListViewController extends BGRemoteSectionedListViewController { //
+export default class BGMessagesListViewController extends BGRemoteSectionedListViewController {
 
     constructor(containerId) {
         super(BGMessageListViewItemView, BGMessagesListViewTextHeaderView);
@@ -19,10 +21,20 @@ export default class BGMessagesListViewController extends BGRemoteSectionedListV
         this._containerId = containerId;
     }
 
-    _createMessageDocumentManager() {
-        const messageDocumentManager = new BGMessageDocumentManager(this.containerId);
+    _createMessagesManager() {
+        const messagesManager = new AppWriteDocumentManager(AppWriteConfig.DATABASE_SHARED_COLLECTION_MESSAGES_ID);
 
-        return messageDocumentManager;
+        return messagesManager;
+    }
+
+    get membershipsManager() {
+        return this._membershipsManager;
+    }
+
+    _createMembershipsManager() {
+        const membershipsManager = new AppWriteMembershipManager(this.containerId);
+
+        return membershipsManager;
     }
 
     _createPreviewManager() {
@@ -35,13 +47,14 @@ export default class BGMessagesListViewController extends BGRemoteSectionedListV
         return this._previewManager;
     }
 
-    get messageDocumentManager() {
-        return this._messageDocumentManager;
+    get messagesManager() {
+        return this._messagesManager;
     }
 
     setup() {
-        this._messageDocumentManager = this._createMessageDocumentManager();
+        this._messagesManager = this._createMessagesManager();
         this._previewManager = this._createPreviewManager();
+        this._membershipsManager = this._createMembershipsManager();
 
         this.updateMessages();
     }
@@ -50,9 +63,15 @@ export default class BGMessagesListViewController extends BGRemoteSectionedListV
         this.startLoading();
 
         const userId = AppWriteAuthentication.sharedInstance.user.$id;
-        const messageDocuments = await this.messageDocumentManager.loadResources([Query.equal("team", this.containerId)]);
+        const memberships = await this.membershipsManager.loadResources();
+        const messageDocuments = await this.messagesManager.loadResources([Query.equal("team", this.containerId)]);
 
-        this.sections = messageDocuments.map(document => new BGListViewMessageItemData(document.$id, document.$createdAt, document.$updatedAt, document.text, document.name, document.author !== userId)).reduce((sections, item) => {
+        this.sections = messageDocuments.reduce((sections, document) => {
+            const membership = memberships.find(membership => membership.userId === document.author);
+            let name = "";
+            if (membership !== undefined) name = membership.userName;
+            const item = new BGListViewMessageItemData(document.$id, document.$createdAt, document.$updatedAt, document.text, name, document.author !== userId)
+
             const createdAt = this._strippedDate(item.createdAt);
             let section = sections.find(section => section.createdAt.getTime() === createdAt.getTime());
             if (section === undefined) {
@@ -146,20 +165,7 @@ export default class BGMessagesListViewController extends BGRemoteSectionedListV
         this.button.isDisabled = this.text.length < 1;
     }
 
-    _onItemViewCreated(event) {
-        /*
-        const itemView = event.data;
-        const index = this.messages.length;
-        if (index % 2 === 0) itemView.backgroundColor = new Color(245, 245, 245);
-        */
-    }
-
-    _onItemViewClicked(event) {
-        const itemView = event.data;
-        console.log(itemView);
-    }
-
-    _createButton() { // todo button bild
+    _createButton() {
         const button = new Button();
         button.borders = Borders.all(new Border(Color.darkGreen, "2px"));
         button.backgroundColor = Color.darkGreen;
@@ -178,14 +184,14 @@ export default class BGMessagesListViewController extends BGRemoteSectionedListV
         const text = this.text;
         if (text.length < 1) return;
 
-        const userId = AppWriteAuthentication.sharedInstance.user.$id; // TODO oder account.get()
+        const userId = AppWriteAuthentication.sharedInstance.user.$id;
 
-        const messageDocument = await this.messageDocumentManager._create({ text: text, team: this.containerId, author: userId });
+        const messageDocument = await this.messagesManager._create({ text: text, team: this.containerId, author: userId });
         const previewManager = this.previewManager;
         const containerId = this.containerId;
 
         const previewDocuments = await previewManager.loadResources([Query.equal("$id", containerId)]);
-        if (previewDocuments.length > 0) await previewManager.update({$id: previewDocuments[0].$id, message: messageDocument.$id});
+        if (previewDocuments.length > 0) await previewManager.update({ $id: previewDocuments[0].$id, message: messageDocument.$id });
         else await previewManager.create({ score: 0, message: messageDocument.$id, $id: containerId });
 
         this.textField.clear();

@@ -6,16 +6,6 @@ import { Event } from "../../utils/Observable.js";
 
 export default class BGListView extends StackView {
 
-    fiter(key, criteria) {
-        /*this._itemViews.forEach((itemView, index) => {
-            itemView.
-        });*/
-    }
-
-    resetFilters() {
-        this._itemViews.forEach(itemView => itemView.isHidden = false);
-    }
-
     static get ITEM_VIEW_CREATED_NOTIFICATION_TYPE() {
         return "itemViewCreated";
     }
@@ -47,7 +37,7 @@ export default class BGListView extends StackView {
         value.forEach(item => this._addItemView(item));
     }
 
-    addItem(item) {// Todo macht der einzeile call sinn?
+    addItem(item) {
         this._addItemView(item);
     }
 
@@ -79,7 +69,7 @@ export default class BGListView extends StackView {
         this.addView(itemView);
     }
 
-    _onItemViewCreated(itemView) { // Todo umbennen un will show oder so
+    _onItemViewCreated(itemView) {
         const event = new Event(BGListView.ITEM_VIEW_CREATED_NOTIFICATION_TYPE, itemView);
         this.notifyAll(event);
     }

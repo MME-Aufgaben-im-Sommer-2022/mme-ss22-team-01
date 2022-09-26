@@ -2,10 +2,7 @@
 
 import Observable, { Event } from "../../utils/Observable.js";
 
-//TODO Style rules noch umsetzen auf fromStyleRule undso
-
 class ImplementationError extends Error { }
-
 class ColorParsingError extends Error { }
 
 class Stylable {
@@ -138,7 +135,7 @@ export class Color {
     }
 
 
-    static fromStyleRule(str, format = undefined) { // todo hier noch regex neu machen: Quelle: https://gist.github.com/sethlopezme/d072b945969a3cc2cc11
+    static fromStyleRule(str, format = undefined) {
         let color;
 
         switch (format) {
@@ -147,7 +144,7 @@ export class Color {
                     color = Color.fromRGB(str);
                 }
                 catch (error) {
-                    if ((error instanceof ColorParsingError) === false) throw error; // Todo review
+                    if ((error instanceof ColorParsingError) === false) throw error;
 
                     color = Color.fromHex(str);
                 }
@@ -374,9 +371,7 @@ class Shadow {
     }
 }
 
-export class TextShadow extends Shadow {
-    // todo static get shadow defaults
-}
+export class TextShadow extends Shadow {}
 
 export class BoxShadow extends Shadow {
     constructor(offsetX, offsetY, color, blurRadius, spreadRadius, inset = false) {
@@ -416,8 +411,6 @@ export class BoxShadow extends Shadow {
 
         return new BoxShadow(shadow.offsetX, shadow.offsetY, shadow.color, shadow.blurRadius, spreadRadius, inset);
     }
-
-    // todo static get shadow defaults
 }
 
 export class Corners extends Stylable {
@@ -504,14 +497,7 @@ export class Corners extends Stylable {
 
     toStyle() {
         let style = {
-            borderRadius: "",
-
-            /*
-            borderTopLeftRadius: "",
-            borderTopRightRadius: "",
-            borderBottomLeftRadius: "",
-            borderBottomRightRadius: ""
-            */
+            borderRadius: ""
         };
 
         const topLeft = this.topLeft;
@@ -728,7 +714,7 @@ export class Margin extends Inset {
 
     toStyle() {
         let style = {
-            marginLeft: "", // Todo hierfür konzept überlegen
+            marginLeft: "", 
             marginRight: "",
             marginTop: "",
             marginBottom: ""
@@ -749,7 +735,6 @@ export class Margin extends Inset {
 }
 
 export class Padding extends Margin {
-
     static fromStyle(style) {
         const left = style.paddingLeft;
         const right = style.paddingRight;
@@ -789,24 +774,6 @@ export class Borders extends Inset {
             borderColor: "",
             borderStyle: "",
             borderWidth: "",
-
-            /*
-            borderLeftColor: "",
-            borderLeftStyle: "",
-            borderLeftWidth: "",
-
-            borderRightColor: "",
-            borderRightStyle: "",
-            borderRightWidth: "",
-
-            borderTopColor: "",
-            borderTopStyle: "",
-            borderTopWidth: "",
-
-            borderBottomColor: "",
-            borderBottomStyle: "",
-            borderBottomWidth: ""
-            */
         };
 
         const left = this.left;
@@ -865,7 +832,7 @@ export class Borders extends Inset {
         return style;
     }
 
-    static _deriveBorder(color, width, style) { // Todo stattdessen vielleicht (static) Border.fromStyle?
+    static _deriveBorder(color, width, style) {
         let borderColor;
         let borderWidth;
         let borderStyle;
@@ -1098,7 +1065,7 @@ export class View extends Observable {
     }
 
     addDOMEventListener(type, listener) {
-        this.node.addEventListener(type, listener); // TODO da noch false am ende?
+        this.node.addEventListener(type, listener);
     }
 
     get overflow() {
@@ -1334,7 +1301,7 @@ export class View extends Observable {
     }
 
     set shadow(value) {
-        if (value === undefined) return; // Todo review
+        if (value === undefined) return;
         const node = this.node;
 
         node.style.boxShadow = value.toStyleRule();
@@ -1410,7 +1377,7 @@ export class GaussianBlurFilter extends Stylable {
 }
 
 export class GridInset extends Inset {
-    static fromStyle(style) { // Todo des direkt in view auslagern, nicht in inset (davor evaluieren, ob sinvoll)
+    static fromStyle(style) {
         const left = style.gridColumnStart;
         const right = style.gridColumnEnd;
         const top = style.gridRowStart;
@@ -1423,7 +1390,7 @@ export class GridInset extends Inset {
 
     toStyle() {
         let style = {
-            gridColumnStart: "", // Todo hierfür konzept überlegen
+            gridColumnStart: "",
             gridColumnEnd: "",
             gridRowStart: "",
             gridRowEnd: ""
@@ -1447,8 +1414,6 @@ export class Gap {
     constructor(horizontal, vertical) {
         this._horizontal = horizontal;
         this._vertical = vertical;
-
-        // Todo oder hier einfach object.freeze(this), dann Inset und alle Unterklassen analog, oder observable und dann parent notifien und wert neu setzen
     }
 
     static all(value) {
@@ -1580,7 +1545,7 @@ export class StackView extends View {
 
     static get WrapCrossAxisAlignment() {
         return Object.freeze({
-            default: "unset", // oder unset oder ""?? TODO
+            default: "unset",
             flexStart: "flex-start",
             flexEnd: "flex-end",
             center: "center",
@@ -1752,7 +1717,7 @@ export class StackView extends View {
     }
 
     static get tag() {
-        return "span"; // Todo oder block?
+        return "span";
     }
 }
 
@@ -2123,10 +2088,10 @@ export class TextField extends Label {
     _addListeners() {
         const node = this.node;
 
-        node.addEventListener(TextField.TEXT_FIELD_CHANGE_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true); // Todo des noch ändern
-        node.addEventListener(TextField.TEXT_FIELD_KEYPRESS_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true); // Todo des noch ändern
-        node.addEventListener(TextField.TEXT_FIELD_PASTE_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true); // Todo des noch ändern
-        node.addEventListener(TextField.TEXT_FIELD_INPUT_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true); // Todo des noch ändern
+        node.addEventListener(TextField.TEXT_FIELD_CHANGE_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true); 
+        node.addEventListener(TextField.TEXT_FIELD_KEYPRESS_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true);
+        node.addEventListener(TextField.TEXT_FIELD_PASTE_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true); 
+        node.addEventListener(TextField.TEXT_FIELD_INPUT_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true);
     }
 
     get readOnly() {
@@ -2349,7 +2314,7 @@ export class Button extends Label {
     _addListeners() {
         const node = this.node;
 
-        node.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onClickWrapper.bind(this), true); // Todo des noch ändern
+        node.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onClickWrapper.bind(this), true); 
         node.addEventListener(Button.BUTTON_MOUSE_OUT_NOTIFICATION_TYPE, this._onMouseOutWrapper.bind(this), true);
         node.addEventListener(Button.BUTTON_MOUSE_OVER_NOTIFICATION_TYPE, this._onMouseOverWrapper.bind(this), true);
     }
@@ -2402,21 +2367,7 @@ export class Button extends Label {
         this._onMouseOut = value;
     }
 }
-/*
-export class Option extends View {
-    get text() {
-        return this.node.text;
-    }
 
-    set text(value) {
-        this.node.text = value;
-    }
-
-    static get tag() {
-        return "option";
-    }
-}
-*/
 export class Select extends View {
 
     constructor() {
@@ -2425,7 +2376,7 @@ export class Select extends View {
         this._addListeners();
     }
 
-    static get SELECT_ON_SELECTION_TYPE_NOTIFICATION() { // todo namen vereinheitlichen
+    static get SELECT_ON_SELECTION_TYPE_NOTIFICATION() { 
         return "select";
     }
 
@@ -2450,7 +2401,7 @@ export class Select extends View {
     }
 
     _addListeners() {
-        this.node.addEventListener(Select.SELECT_ON_SELECTION_TYPE_NOTIFICATION, this._onSelect.bind(this), true); // Todo des noch ändern
+        this.node.addEventListener(Select.SELECT_ON_SELECTION_TYPE_NOTIFICATION, this._onSelect.bind(this), true); 
     }
 
     _onSelect(event) {
@@ -2528,7 +2479,6 @@ export class Controller extends Observable {
     }
 
     _createView() {
-        //const view = new Section();
         const stackView = new StackView(StackView.Axis.vertical, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.stretch);
         this._view = stackView;
 

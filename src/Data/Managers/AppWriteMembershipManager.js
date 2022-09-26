@@ -32,7 +32,7 @@ export default class AppWriteMembershipManager extends AppWriteResourceManager {
     }
 
     async _createMembership(mail) {
-        return await this.api.createMembership(this.teamId, mail, [], `https://${AppWriteConfig.APPLICATION_URL}`);
+        return await this.api.createMembership(this.teamId, mail, ["admin"], `https://${AppWriteConfig.APPLICATION_URL}`);
     }
 
     createMembership(mail) {

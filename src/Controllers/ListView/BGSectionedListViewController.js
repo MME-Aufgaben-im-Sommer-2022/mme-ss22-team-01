@@ -5,7 +5,7 @@ import BGChallengeListViewItemView from "../../UI/Views/BGChallengeListViewItemV
 import BGSectionedListView from "../../UI/Views/BGSectionedListView.js";
 import BGController from "../BGController.js";
 
-export default class BGSectionedListViewController extends BGController { // ob man den wirklich braucht?
+export default class BGSectionedListViewController extends BGController {
 
     constructor(itemViewClass, headerViewClass) {
         super();
@@ -54,8 +54,8 @@ export default class BGSectionedListViewController extends BGController { // ob 
         const sectionedListView = new BGSectionedListView();
         sectionedListView.padding = Padding.all("10px");
         sectionedListView.gap = Gap.all("10px");
-        sectionedListView.addEventListener(BGSectionedListView.ITEM_VIEW_CREATED_NOTIFICATION_TYPE, this._onItemViewCreated.bind(this)); //bind needed?
-        sectionedListView.addEventListener(BGChallengeListViewItemView.ITEM_VIEW_SELECTED_NOTIFICATION_TYPE, this._onItemViewClicked.bind(this)); //bind needed?
+        sectionedListView.addEventListener(BGSectionedListView.ITEM_VIEW_CREATED_NOTIFICATION_TYPE, this._onItemViewCreated.bind(this));
+        sectionedListView.addEventListener(BGChallengeListViewItemView.ITEM_VIEW_SELECTED_NOTIFICATION_TYPE, this._onItemViewClicked.bind(this));
         sectionedListView.corners = Corners.bottom(new RoundedCorner("15px"));
         this._listView = sectionedListView;
 
@@ -63,14 +63,11 @@ export default class BGSectionedListViewController extends BGController { // ob 
     }
 
     _onItemViewCreated(event) {
-        const itemView = event.data;
-        const index = this.items.length;
-        if (index % 2 === 0) itemView.backgroundColor = new Color(245, 245, 245);
+        this.notifyAll(event);
     }
 
     _onItemViewClicked(event) {
-        const itemView = event.data;
-        console.log(itemView);
+        this.notifyAll(event);
     }
     
     _createContentView() {

@@ -49,17 +49,6 @@ export default class BGChallengeCreationSectionView extends BGItemCreationSectio
 
         return stackView;
     }
-    /*
-        _createTrailingContainer() {
-            const trailingContainer = super._createTrailingContainer();
-    
-            const startButton = this._createButton();
-            this._startButton = startButton;
-            trailingContainer.addView(startButton);
-    
-            return trailingContainer;
-        }
-    */
 
     _createDescriptionTextArea() {
         const textArea = new TextArea();
@@ -75,7 +64,7 @@ export default class BGChallengeCreationSectionView extends BGItemCreationSectio
         textArea.minLength = 4;
         textArea.minHeight = "50px";
         textArea.maxHeight = "300px"
-        textArea.borders = Borders.all(Border.none); //todo dafür static get
+        textArea.borders = Borders.all(Border.none);
         textArea.addEventListener(TextArea.TEXT_FIELD_CHANGE_NOTIFICATION_TYPE, this._onNameChange.bind(this));
         textArea.addEventListener(TextArea.TEXT_FIELD_KEYPRESS_NOTIFICATION_TYPE, this._onNameChange.bind(this));
         textArea.addEventListener(TextArea.TEXT_FIELD_PASTE_NOTIFICATION_TYPE, this._onNameChange.bind(this));

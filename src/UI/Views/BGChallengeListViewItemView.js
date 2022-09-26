@@ -74,14 +74,13 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
 
     _createView() {
         const view = super._createView();
-        view.backgroundColor = new Color(245, 245, 245); // TOdo des noch raus nur test, farbe wird dynamisch gesetzt
+        view.backgroundColor = new Color(245, 245, 245);
 
         const dividerView = this._createDividerView();
         view.addView(dividerView);
 
         const buttonContainerView = this._createButtonContainerView();
         view.addView(buttonContainerView);
-        //this._buttonContainerView = buttonContainerView;
 
         return view;
     }
@@ -238,7 +237,7 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         return this._deleteButton;
     }
 
-    _createButtonContainerView() { // Todo maybe contact view und diese klasse aus neuer  class erben lassen
+    _createButtonContainerView() {
         const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceAround, StackView.CrossAxisAlignment.center, Gap.all("20px"));
         stackView.padding = Padding.axes("30px", "10px");
 
@@ -261,14 +260,14 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         return stackView;
     }
 
-    _createButton() { // todo für icon einfach awesomefont benutzen wenn des hinhaut // STATE EINFÜREN UND BUTTONS MIT VERSCHIENDEN ACTIONS HIDEN. ODER BUTTONCLASS FOR STATE
+    _createButton() { 
         const button = new Button();
         button.borders = Borders.all(new Border(Color.darkGrey, "1px"));
         button.padding = Padding.zero;
         button.corners = Corners.all(new RoundedCorner("100%"));
 
         return button;
-    } //Todo die buttons hier noch klären
+    }
 
     _createAcceptButton() {
         const button = this._createButton();

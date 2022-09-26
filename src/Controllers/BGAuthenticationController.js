@@ -1,7 +1,6 @@
 "use strict";
 
 import AppWriteAuthentication from "../AppWrite/AppWriteAuthentication.js";
-import BGIndexController from "./BGIndexController.js";
 import { TextField, Border, Borders, BoxShadow, Color, Corners, Label, Padding, RoundedCorner, StackView, View, Gap, Margin, Button, Controller } from "../UI/libs/WrappedUI.js";
 import image from "../../public/muneeb-syed-x9NfeD3FpsE-blur-10-unsplash.jpg";
 
@@ -141,12 +140,6 @@ export default class BGAuthenticationController extends Controller {
         stackView.gap = Gap.all("25px");
         stackView.width = "325px";
 
-
-        //stackView.minWidth = "200px";
-        //stackView.width = "30%"; //Todo width implizit durch textField?
-        //stackView.height = "300px";
-        //stackView.padding = Padding.all("50px");
-
         const label = this._createLabel();
         stackView.addView(label);
         this._label = label;
@@ -170,7 +163,7 @@ export default class BGAuthenticationController extends Controller {
         stackView.corners = Corners.all(new RoundedCorner("10px"));
         stackView.backgroundColor = Color.darkGreen;
 
-        const mailTextField = this._createMailTextField(); // da einfach createTextField, placeholder, mode
+        const mailTextField = this._createMailTextField();
         stackView.addView(mailTextField);
         this._mailTextField = mailTextField;
 
@@ -219,6 +212,7 @@ export default class BGAuthenticationController extends Controller {
         textField.padding = Padding.axes("10px", "7px");
         textField.borders = Borders.all(Border.none);
         textField.corners = Corners.all(new RoundedCorner("1px"));
+        textField.isRequired = true;
 
         return textField;
     }
@@ -226,6 +220,7 @@ export default class BGAuthenticationController extends Controller {
     _createNameTextField() {
         const textField = this._createTextField();
         textField.placeholder = "Name";
+        textField.minLength = 4;
 
         return textField;
     }
@@ -234,7 +229,8 @@ export default class BGAuthenticationController extends Controller {
         const textField = this._createTextField();
         textField.placeholder = "Passwort";
         textField.textInputType = TextField.TextInputType.password;
-        //textField.borders = Borders.all(new Border(Color.darkGreen, "2px"));
+        textField.minLength = 4;
+        textField.maxLength = 32;
 
         return textField;
     }
@@ -242,7 +238,7 @@ export default class BGAuthenticationController extends Controller {
     _createMailTextField() {
         const textField = this._createTextField();
         textField.placeholder = "Mail";
-        textField.textInputType = TextField.TextInputType.mail;
+        textField.textInputType = TextField.TextInputType.email;
 
         return textField;
     }
@@ -268,7 +264,7 @@ export default class BGAuthenticationController extends Controller {
         return button;
     }
 
-    _createSubmitButton() { //Todo eine methode createbutton und dann hier nur noch die custom actions, viel duplizierter code
+    _createSubmitButton() {
         const button = this._createButton();
 
         button.color = Color.darkGreen;
@@ -280,7 +276,9 @@ export default class BGAuthenticationController extends Controller {
     }
 
     _updateMode() {
-        switch (this.mode) { // Todo des kann noch gekürzt werden wenn da nichts mehr dazukommt
+        const mode = this.mode;
+
+        switch (mode) {
             case BGAuthenticationController.Mode.login:
                 this.nameTextField.isHidden = true;
                 this.modeHint = BGAuthenticationController.REGISTER_BUTTON_HINT_TEXT;
@@ -292,7 +290,7 @@ export default class BGAuthenticationController extends Controller {
                 this.submitHint = BGAuthenticationController.REGISTER_BUTTON_HINT_TEXT;
                 break;
             default:
-                throw new Error("Unsupported mode");
+                throw new Error(`Unsupported mode ${mode}`);
         }
     }
 
@@ -302,17 +300,21 @@ export default class BGAuthenticationController extends Controller {
 
     async _submit() {
         const contentView = this.contentView;
-        contentView.isDisabled = true;
         try {
-            switch (this.mode) { // Todo des kann noch gekürzt werden wenn da nichts mehr dazukommt
-                case BGAuthenticationController.Mode.login: // todo validate
+            const mode = this.mode;
+            switch (mode) {
+                case BGAuthenticationController.Mode.login:
+                    if ((this.mailTextField.validate() && this.passwordTextField.validate()) === false) throw new Error("Failed to validate input");
+                    contentView.isDisabled = true;
                     await AppWriteAuthentication.sharedInstance.login(this.email, this.password);
                     break;
                 case BGAuthenticationController.Mode.register:
+                    if ((this.mailTextField.validate() && this.nameTextField.validate() && this.passwordTextField.validate()) === false) throw new Error("Failed to validate input");
+                    contentView.isDisabled = true;
                     await AppWriteAuthentication.sharedInstance.register(this.email, this.password, this.name);
                     break;
                 default:
-                    throw new Error("Unsupported mode");
+                    throw new Error(`Unsupported mode: ${mode}`);
             }
             this.removeFromParentController();
         }

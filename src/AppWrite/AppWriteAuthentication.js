@@ -4,7 +4,7 @@ import AppWriteClient from "./AppWriteClient.js";
 import { Account } from "appwrite";
 import Observable from "../utils/Observable.js";
 
-export default class AppWriteAuthentication extends Observable { // Todo email verification, password reset
+export default class AppWriteAuthentication extends Observable {
 
     static get APPWRITEAUTHENTICATION_AUTHENTICATED_NOTIFICATION_TYPE() {
         return "authenticated";
@@ -31,7 +31,7 @@ export default class AppWriteAuthentication extends Observable { // Todo email v
         this._createAccount();
     }
 
-    async synchronize() { // Todo checken ob man sich session sparen kann
+    async synchronize() {
         const account = this.account;
         
         this._user = await account.get();
@@ -47,7 +47,7 @@ export default class AppWriteAuthentication extends Observable { // Todo email v
     }
 
     get isAuthenticated() {
-        return this.user !== undefined && this.session !== undefined; // Todo checken ob man sich session sparen kann
+        return this.user !== undefined && this.session !== undefined;
     }
 
     _createAccount() {
@@ -55,7 +55,7 @@ export default class AppWriteAuthentication extends Observable { // Todo email v
         this._account = new Account(client);
     }
 
-    async register(email, password, name) { // Todo direkt statisch machen, keine sharedinstance
+    async register(email, password, name) {
         const user = await this.account.create("unique()", email, password, name);
         await this.login(email, password);
 
@@ -63,7 +63,7 @@ export default class AppWriteAuthentication extends Observable { // Todo email v
     }
 
     async login(email, password) {
-        await this.logout(false); // Todo evaluieren, ob account.get mit deleSession (logout) resettet wird, wahrscheinlich nicht!
+        await this.logout(false);
         const account = this.account;
 
         this._session = await account.createEmailSession(email, password);
@@ -76,7 +76,7 @@ export default class AppWriteAuthentication extends Observable { // Todo email v
     }
 
     async logout(notify = true) {
-        const session = this.session; //Todo passed by reference also auch kürzer schreibbar
+        const session = this.session;
 
         if (session !== undefined) await this.account.deleteSession(session.$id);
 

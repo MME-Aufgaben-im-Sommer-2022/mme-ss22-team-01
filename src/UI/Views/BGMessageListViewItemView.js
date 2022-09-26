@@ -25,7 +25,7 @@ export default class BGMessageListViewItemView extends BGListViewItemView {
         return this.timeLabel.text;
     }
 
-    set time(value) {//todo formatting
+    set time(value) {
         this.timeLabel.text = value;
     }
 

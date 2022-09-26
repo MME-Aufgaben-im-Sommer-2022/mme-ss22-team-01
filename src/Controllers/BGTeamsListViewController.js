@@ -14,7 +14,7 @@ import AppWriteDocumentManager from "../Data/Managers/AppWriteDocumentManager.js
 import AppWriteConfig from "../AppWrite/AppWriteConfig.js";
 import { Query } from "appwrite";
 
-export default class BGTeamsListViewController extends BGSearchableListViewController { // extends BGListViewController+ // BGSearchableListViewController
+export default class BGTeamsListViewController extends BGSearchableListViewController {
 
     static get GROUP_SELECTED_NOTIFICATION_TYPE() {
         return "groupSelected";
@@ -25,7 +25,7 @@ export default class BGTeamsListViewController extends BGSearchableListViewContr
     }
 
     constructor(listMode = BGTeamsListViewController.ListMode.default) {
-        super(BGContactListViewTeamItemView, BGSectionedListViewTextHeaderView, listMode); //Todo die classes noch in statische getter umwandeln, falls gewünscht. Ändern sich ja nie
+        super(BGContactListViewTeamItemView, BGSectionedListViewTextHeaderView, listMode);
     }
 
     get teamManager() {

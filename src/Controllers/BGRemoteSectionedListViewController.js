@@ -30,10 +30,7 @@ export default class BGRemoteSectionedListViewController extends BGSectionedList
 
     _createContentView() {
         const contentView = super._createContentView();
-
-        //contentView.backgroundColor = Color.cyan;
-        //contentView.grow = "1";
-        //contentView.mainAxisAlignment = StackView.MainAxisAlignment.center;
+        
         const loadingView = this._createLoadingView();
         this._loadingView = loadingView;
         contentView.addView(loadingView);

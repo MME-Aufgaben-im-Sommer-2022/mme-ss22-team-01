@@ -3,7 +3,7 @@
 import { Gap, StackView } from "../libs/WrappedUI.js";
 import { Event } from "../../utils/Observable.js";
 
-export default class BGListViewItemView extends StackView { // stattdessen article extenden oder in article wrappen?
+export default class BGListViewItemView extends StackView {
 
     static get ITEM_VIEW_SELECTED_NOTIFICATION_TYPE() {
         return "itemViewSelected";
@@ -50,10 +50,6 @@ export default class BGListViewItemView extends StackView { // stattdessen artic
         this.contentView.padding = value;
     }
 
-    filter(criteria) { // Todo des nochmal überdenken
-        return true;
-    }
-
     _createView() {
         const contentView = this._createContentView();        
         this._contentView = contentView;
@@ -76,6 +72,5 @@ export default class BGListViewItemView extends StackView { // stattdessen artic
     }
 
     _applyData() {
-        //throw new ImplementationError();
     }
 }
