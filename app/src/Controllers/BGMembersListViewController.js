@@ -1,108 +1,141 @@
-"use strict";
-
-import { Teams } from "appwrite";
+/*eslint no-magic-numbers: "off"*/
 import AppWriteAuthentication from "../AppWrite/AppWriteAuthentication.js";
-import AppWriteClient from "../AppWrite/AppWriteClient.js";
 import BGContactListViewTeamItemView from "../UI/Views/BGContactListViewTeamItemView.js";
 import BGListViewTeamItemData from "../Data/Models/BGListViewTeamItemData.js";
-import BGSearchableListViewController from "./ListView/BGSearchableListViewController.js";
-import BGSectionedListViewTextHeaderView from "../UI/Views/BGSectionedListViewTextHeaderView.js";
 import BGMemberCreationController from "./BGMemberCreationController.js";
 import BGSectionedListViewSectionData from "../Data/Models/BGSectionedListViewSectionData.js";
 import { Color } from "../UI/libs/WrappedUI.js";
+import BGSearchableListViewController from "./BGSearchableListViewController.js";
+import AppWriteMembershipManager from "../Data/Managers/AppWriteMembershipManager.js";
+import BGListViewItemView from "../UI/Views/BGListViewItemView.js";
 
+/**
+ * this controller is used to manage members of a team, to delete, add and observe members
+ */
 export default class BGMembersListViewController extends BGSearchableListViewController {
 
+    constructor(teamId, listMode = BGMembersListViewController.ListMode.default) {
+        super(BGContactListViewTeamItemView, BGListViewItemView, listMode);
+
+        this._teamId = teamId;
+    }
+
+    /**
+     * this getter exposes access to the team id to manage members for
+     */
     get teamId() {
         return this._teamId;
     }
-    constructor(teamId, listMode = BGMembersListViewController.ListMode.default) {
-        super(BGContactListViewTeamItemView, BGSectionedListViewTextHeaderView, listMode); //Todo die classes noch in statische getter umwandeln, falls gewünscht. Ändern sich ja nie
 
-        //this._createManager();
-
-        this._teamId = teamId;
-        (async () => {
-            await this.updateSections();
-        })();
-
+    /**
+     * this getter exposes access to the internal database manager
+     */
+    get membershipManager() {
+        return this._membershipManager;
     }
 
+    /**
+     * this method is used to setup the api connections and load data to display the list
+     */
+    setup() {
+        this._membershipManager = this._createMembershipManager();
+        this.updateSections();
+    }
+
+    /**
+     * this method is used to create a backend membership manager
+     * @returns an instance of AppWriteMembershipManager
+     */
+    _createMembershipManager() {
+        const membershipManager = new AppWriteMembershipManager(this.teamId);
+
+        return membershipManager;
+    }
+
+    /**
+     * this method is used to create a controller to create new members
+     * @returns an instance of BGMemberCreationController
+     */
     _createItemCreationController() {
         const controller = new BGMemberCreationController();
-        controller.addEventListener(BGTeamCreationController.ITEM_CONFIGURATION_FINISHED_NOTIFICATION_TYPE, this._didFinishConfiguration.bind(this));
 
         return controller;
     }
 
-    _didFinishConfiguration(event) {
-        this.hideItemCreationController();
-        
-        (async () => {
-            await this.updateSections();
-        })()
-    }
-
+    /**
+     * this method is used to load data from the backend and update the list accordingly
+     * @param {[]<string>} filter 
+     */
     async updateSections(filter) {
-        const teamId = this.teamId;
-        if (teamId === undefined) return;
-        const client = AppWriteClient.sharedInstance.client;
-        const teams = new Teams(client);
+        this.startLoading();
 
-        const t = await teams.getMemberships(teamId, filter);
+        const memberships = await this.membershipManager.loadResources(filter);
 
-        const friends = new BGSectionedListViewSectionData("members", 0, 0, [], "");
-        const userId = AppWriteAuthentication.sharedInstance.user.$id;
+        this.sections = (memberships.length > 0) ? [new BGSectionedListViewSectionData("members", 0, 0, memberships.filter(membership => membership.userId !== AppWriteAuthentication.sharedInstance.user.$id).map(membership => new BGListViewTeamItemData(membership.$id, membership.$createdAt, membership.$updatedAt, membership.userName, 0)))] : [];
 
-        t.memberships.forEach(membership => {
-            if (membership.userId === userId) return;
-            const item = new BGListViewTeamItemData(membership.userId, membership.$createdAt, membership.$updatedAt, membership.userName, 0, "");
-            friends.addItem(item);
-        });
-
-        this.sections = [friends].filter(section => section.isEmpty === false);
+        this.stopLoading();
     }
 
-
+    /**
+     * this method is overridden from its superclass to do further setup on new item views. 
+     * @param {Event} event 
+     */
     _onItemViewCreated(event) {
         const itemView = event.data;
-        const index = this.items.length;
 
         itemView.backgroundColor = new Color(245, 245, 245);
+        itemView.addEventListener(BGContactListViewTeamItemView.ITEM_DELETE_BUTTON_CLICKED_NOTIFICATION_TYPE, this._onItemViewDeleteClicked.bind(this));
     }
 
-    _onItemViewClicked(event) {
-        const itemView = event.data;
-        const item = itemView.data;
-    }
-
+    /**
+     * this method gets called after a text entry has been made and updates the list accordingly
+     */
     _onSearchTextChangeEnd() {
         const searchText = this.searchText;
 
         let filter = searchText;
-        if (searchText.length < 1) filter = undefined;
+        if (searchText.length < 1) { filter = undefined; }
 
-        console.log("ended");
-
-        (async () => {
-            await this.updateSections(filter);
-        })()
+        this.updateSections(filter);
     }
 
-    _onSearchStart() {
-        this.searchBar.focus();
-    }
-
-    _onSearchEnd() {
-        this.searchBar.clear();
-
-
-        (async () => {
-            await this.updateSections();
-        })()
-    }
-
+    /**
+     * this method gets called if users press the submit button in the creation controller. A new api request is initiated.
+     * @param {Event} event 
+     */
     _onItemConfigurationFinished(event) {
-        this.hideItemCreationController();
+        super._onItemConfigurationFinished(event);
+
+        const mail = event.data;
+        this.createMembership(mail);
+    }
+
+    /**
+     * this method is used to create a new membership and update the list afterwards
+     * @param {string} mail 
+     */
+    async createMembership(mail) {
+        await this.membershipManager.createMembership(mail);
+        await this.updateSections();
+    }
+
+    /**
+     * this method is called if users press the delete button on list view items
+     * @param {Event} event 
+     */
+    _onItemViewDeleteClicked(event) {
+        const itemView = event.data;
+
+        this.deleteMembership(itemView.data.id);
+    }
+
+    /**
+     * this method is used to delete a member from a group and to update the list afterwards
+     * @param {string} membershipId 
+     */
+    async deleteMembership(membershipId) {
+        this.startLoading();
+        await this.membershipManager.delete({ teamId: this.teamId, membershipId: membershipId });
+        await this.updateSections();
     }
 }

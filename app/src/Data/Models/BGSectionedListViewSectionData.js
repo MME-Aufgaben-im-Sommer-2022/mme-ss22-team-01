@@ -1,24 +1,21 @@
-"use strict";
-
 import BGListViewItemData from "./BGListViewItemData.js";
 
+/**
+ * this class is used to create the base data source class for list view sections
+ */
 export default class BGSectionedListViewSectionData extends BGListViewItemData {
-
-    get header() {
-        return this._header;
-    }
-
-    set header(value) {
-        this._header = value;
-    }
 
     get items() {
         return this._items;
     }
 
     set items(value) {
-        value.forEach(item => item.section = this); //todo addItem
+        value.forEach(item => item.section = this);
         this._items = value;
+    }
+
+    get isEmpty() {
+        return this.items.length < 1;
     }
 
     addItem(item) {
@@ -26,18 +23,9 @@ export default class BGSectionedListViewSectionData extends BGListViewItemData {
         this.items.push(item);
     }
 
-    get isEmpty() {
-        return this.items.length < 1;
-    }
-
-    constructor(id, createdAt, updatedAt, items, header) {
+    constructor(id, createdAt, updatedAt, items) {
         super(id, createdAt, updatedAt);
         
         this.items = items;
-        this.header = header;
-    }
-
-    matches(criteria) {
-        return this.items.some(item => item.matches(criteria) === true);
     }
 }

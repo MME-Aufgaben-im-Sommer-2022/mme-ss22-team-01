@@ -1,10 +1,11 @@
-"use strict";
-
 import BGSectionedListViewItemData from "./BGSectionedListViewItemData.js";
 
+/**
+ * this class is used as the data source for a team
+ */
 export default class BGListViewTeamItemData extends BGSectionedListViewItemData {
 
-    constructor(id, createdAt, updatedAt, name, score, message) {
+    constructor(id, createdAt, updatedAt, name, score, message = "") {
         super(id, createdAt, updatedAt);
 
         this._score = score;

@@ -1,14 +1,13 @@
-/* eslint-env node */
+/* eslint-disable no-console */
 
-import "dotenv/config";
-import express from "express";
-import open from "open";
+require("dotenv/config");
+const express = require("express");
 
 function init() {
-    let app = express();
+    const app = express();
     app.use("/", express.static("app"));
     app.listen(process.env.DEV_PORT, function() {
-        console.log("Server started. Opening application in browser ... [Press CTRL + C to stop server]"); // eslint-disable-line no-console
+        console.log("Server started. Opening application in browser ... [Press CTRL + C to stop server]");
     });
 }
 

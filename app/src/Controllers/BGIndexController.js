@@ -1,26 +1,53 @@
-"use strict";
-
-import BGRootViewController from "./BGRootController.js";
-import BGMessageListViewController from "./ListView/BGMessageListViewController.js";
-import BGAuthController from "./BGAuthController.js";
+/*eslint no-magic-numbers: "off"*/
+import BGAuthenticationController from "./BGAuthenticationController.js";
 import AppWriteAuthentication from "../AppWrite/AppWriteAuthentication.js";
 import BGTeamsListViewController from "./BGTeamsListViewController.js";
-import BGChallengesListViewController from "./BGChallengeListViewController.js";
-import BGListViewItemView from "../UI/Views/BGListViewItemView.js";
+import BGChallengesListViewController from "./BGChallengesListViewController.js";
 import BGMembersListViewController from "./BGMembersListViewController.js";
 import BGTeamChallengesListViewController from "./BGTeamChallengesListViewController.js";
 import BGLeaderboardController from "./BGLeaderboardController.js";
-import { Button, Color, Icon } from "../UI/libs/WrappedUI.js";
-import { Query, Databases } from "appwrite";
-import AppWriteClient from "../AppWrite/AppWriteClient.js";
-import AppWriteConfig from "../AppWrite/AppWriteConfig.js";
+import { Border, Borders, BoxShadow, Button, Color, Corners, Gap, Grid, GridInset, Icon, Label, Navigation, Padding, RootController, RoundedCorner, StackView, View } from "../UI/libs/WrappedUI.js";
+import { Query } from "appwrite";
+import BGMessagesListViewController from "./BGMessagesListViewController.js";
+import image from "../../public/muneeb-syed-x9NfeD3FpsE-unsplash.jpg";
+import BGPreviewDocumentManager from "../Data/Managers/BGPreviewDocumentManager.js";
+import Logger from "../utils/Logger.js";
 
-export default class BGIndexController extends BGRootViewController {
+/**
+ * this controller is the entrypoint for begreen. It manages all embedded controllers and presents the user with an authentication controller if necessary.
+ */
+export default class BGIndexController extends RootController {
+    /**
+     * this constant represents all available layouts for embedded controllers
+     */
+    static get ControllerPosition() {
+        return Object.freeze({
+            topLeft: new GridInset("1", "1", "2", "2"),
+            bottomLeft: new GridInset("2", "1", "2", "3"),
+            right: new GridInset("1", "2", "3", "3"),
+        });
+    }
+
+    /**
+     * this constant is used to distinguish between the two modes start and detail. Start is the state at the beginning of the lifecycle, the controller may switch to detail if a user decides focus on a group or a chat.
+     */
     static get Mode() {
         return Object.freeze({
             start: "start",
-            detail: "detail"
+            detail: "detail",
         });
+    }
+
+    constructor(mode = BGIndexController.Mode.start) {
+        super();
+        this.mode = mode;
+    }
+
+    /**
+     * below is a variety of getters and setters to limit access to embedded controllers and ui elements
+     */
+    get embeddedControllers() {
+        return this._embeddedControllers;
     }
 
     get mode() {
@@ -29,41 +56,141 @@ export default class BGIndexController extends BGRootViewController {
 
     set mode(value) {
         this._mode = value;
-
-        // this._applyMode();
     }
 
-    _createIconButton() {
-        const iconButton = super._createIconButton();
-        iconButton.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onIconButtonPressed.bind(this));
-        iconButton.addEventListener(Button.BUTTON_MOUSE_OVER_NOTIFICATION_TYPE, this._onIconButtonMouseOver.bind(this));
-        iconButton.addEventListener(Button.BUTTON_MOUSE_OUT_NOTIFICATION_TYPE, this._onIconButtonMouseOut.bind(this));
-
-        return iconButton;
+    get navigationView() {
+        return this._navigationView;
     }
 
-    _onIconButtonMouseOver(event) {
-        if (this.mode !== BGIndexController.Mode.start) return;
+    get titleLabel() {
+        return this._titleLabel;
+    }
+
+    get title() {
+        return this.titleLabel.text;
+    }
+
+    set title(value) {
+        this.titleLabel.text = value;
+    }
+
+    get scoreLabel() {
+        return this._scoreLabel;
+    }
+
+    get score() {
+        return parseInt(this.scoreLabel.text);
+    }
+
+    set score(value) {
+        this.scoreLabel.text = value.toString();
+    }
+
+    get iconButton() {
+        return this._iconButton;
+    }
+
+    get contact() {
+        return this.iconButton.text;
+    }
+
+    set contact(value) {
+        this.iconButton.text = value;
+    }
+
+    get contentView() {
+        return this._contentView;
+    }
+
+    get previewManager() {
+        return this._previewManager;
+    }
+
+    /**
+     * this method is a overridden lifecycle function from its superclass to manage embedded controllers once the controllers own views have finished loading.
+     */
+    _onViewsCreated() {
+        this._embeddedControllers = [];
+
+        this._ensureAuthentication();
+        this._createControllers();
+    }
+
+    /**
+     * this method is a overridden lifecycle function to tell embedded controllers if the controller starts presenting and if an user has been logged in
+     */
+    _onPresentationStateChange() {
+        if (this.presentationState === BGIndexController.PresentationState.presented && AppWriteAuthentication.sharedInstance.isAuthenticated === true) { this._setup(); }
+    }
+
+    /**
+     * this method is used to load and display data from appwrite after the controller has appeared and an user has been logged in. It is also used for general setup.
+     */
+    _setup() {
+        this._setupControllers();
+        this._setIcon();
+        this._previewManager = this._createPreviewManager();
+        this.updateScore();
+    }
+
+    /**
+     * this method is used to tell all embedded controllers to start fetching data, it may only be safe to be called after a user has been authenticated
+     */
+    _setupControllers() {
+        this.embeddedControllers.forEach(embeddedController => embeddedController.setup());
+    }
+
+    /**
+     * this method is used to check the authentication status and present an authentication screen to users. It ensures that appwrite may only be called after a successful authentication.
+     */
+    _ensureAuthentication() {
+        const authentication = AppWriteAuthentication.sharedInstance;
+        authentication.addEventListener(AppWriteAuthentication.APPWRITEAUTHENTICATION_DEAUTHENTICATED_NOTIFICATION_TYPE, this._presentAuthenticationController.bind(this));
+
+        AppWriteAuthentication.sharedInstance.synchronize().then(() => {
+            if (authentication.isAuthenticated === false) { this._presentAuthenticationController(); }
+            else { this._setup(); }
+        }, error => {
+            Logger.sharedInstance.error(error);
+            this._presentAuthenticationController();
+        });
+    }
+
+    /**
+     * this method is used to present the authenticationcontroller
+     */
+    _presentAuthenticationController() {
+        const authController = new BGAuthenticationController();
+        this.addController(authController);
+    }
+
+    /**
+     * this method is used to display an logout icon if the user hovers over the navigation button in start mode
+     */
+    _onIconButtonMouseOver() {
+        if (this.mode !== BGIndexController.Mode.start) { return; }
 
         this._addLogoutIcon();
     }
 
-    _onIconButtonMouseOut(event) {
-        if (this.mode !== BGIndexController.Mode.start) return;
+    /**
+     * this method is used to switch back to the user icon once a user exits the navigation button in start mode
+     */
+    _onIconButtonMouseOut() {
+        if (this.mode !== BGIndexController.Mode.start) { return; }
 
-        this._removeLogoutIcon();
         this._setIcon();
     }
 
-
-    _onIconButtonPressed(event) {
+    /**
+     * this method handles navigation button clicks
+     */
+    _onIconButtonPressed() {
         const mode = this.mode;
 
         switch (mode) {
             case BGIndexController.Mode.start:
-                (async () => {
-                    await AppWriteAuthentication.sharedInstance.logout();
-                })()
+                AppWriteAuthentication.sharedInstance.logout();
                 break;
             case BGIndexController.Mode.detail:
                 break;
@@ -72,194 +199,373 @@ export default class BGIndexController extends BGRootViewController {
         }
 
         this.removeStackedControllers();
+        this._setupControllers();
     }
 
-    get closeIcon() {
-        return this._closeIcon;
-    }
-
-
+    /**
+     * this method is used to set the navigation button to 'close' visually
+     */
     _addCloseIcon() {
         const closeIcon = this._createCloseIcon();
-        this.iconButton.text = "";
-        this.iconButton.addView(closeIcon);
-        this._closeIcon = closeIcon;
+        this.iconButton.innerHTML = closeIcon.htmlText;
     }
 
-    _removeCloseIcon() {
-        this.iconButton.text = "";
-        this._closeIcon = undefined;
-    }
-
-    get logoutIcon() {
-        return this._logoutIcon;
-    }
-
+    /**
+    * this method is used to set the navigation button to 'logout' visually
+    */
     _addLogoutIcon() {
         const logoutIcon = this._createLogoutIcon();
-        this.iconButton.text = "";
-        this.iconButton.addView(logoutIcon);
-        this._logoutIcon = logoutIcon;
+        this.iconButton.innerHTML = logoutIcon.htmlText;
     }
 
-    _removeLogoutIcon() {
-        this.iconButton.text = "";
-        this._logoutIcon = undefined;
+    /**
+     * this method is used to embed controllers, adding them either directly to the content view or stacking them on top of other controllers already present for one particular position
+     * @param {BGController} controller 
+     * @param {GridInset} position 
+     */
+    embedController(controller, position) {
+        if (controller.parentController !== undefined) { throw new Error("Cannot add controller to more than one parent controller"); }
+
+        const embeddedControllers = this.embeddedControllers,
+            parentController = embeddedControllers.find(controller => position.equals(controller.view.gridInset) === true);
+
+        embeddedControllers.push(controller);
+
+        if (parentController !== undefined) {
+            controller.view.position = View.Position.absolute;
+
+            controller.view.top = "0px";
+            controller.view.bottom = "0px";
+            controller.view.left = "0px";
+            controller.view.right = "0px";
+
+            parentController.addController(controller);
+        }
+        else {
+            controller.parentController = this;
+            controller.view.gridInset = position;
+
+            this.contentView.addView(controller.view);
+        }
     }
 
+    /**
+     * this method is used to remove all stacked controllers, ignoring the controllers directly added to the content view
+     */
+    removeStackedControllers() {
+        this.mode = BGIndexController.Mode.start;
+        this.embeddedControllers.forEach(controller => controller.removeControllers());
+
+        this._setIcon();
+        this.updateScore();
+
+        this.title = "BeGreen";
+    }
+
+    /**
+     * this method is used to update the score label to reflect the current value stored in appwrite
+     * @param {string} containerId a string representing the appwrite preview container id
+     */
+    async updateScore(containerId = AppWriteAuthentication.sharedInstance.user.$id) {
+        let score = 0;
+
+        const previewDocuments = await this.previewManager.loadResources([Query.equal("$id", containerId)]);
+        if (previewDocuments.length > 0) { score = `${previewDocuments[0].score} 🍀`; }
+
+        this.score = score;
+    }
+
+    /**
+     * this method is used to switch to detail mode and show groups if the user selects a group
+     * @param {Event} event 
+     */
+    _onGroupSelected(event) {
+        const teamView = event.data,
+            team = teamView.data;
+
+        this.presentGroup(team);
+    }
+
+    /**
+     * this method is used to switch to detail mode and show chats if the user selects a chat
+     * @param {Event} event 
+     */
+    _onChatSelected(event) {
+        const teamView = event.data,
+            team = teamView.data;
+
+        this.presentChat(team);
+    }
+
+    /**
+     * this method is used to display chat-controllers
+     * @param {BGListViewItemData} team the data object of the selected listview item to represent a team
+     */
+    presentChat(team) {
+        this.removeStackedControllers();
+        this.mode = BGIndexController.Mode.detail;
+
+        const id = team.id, challengesListViewController = this._createTeamChallengesListViewController(id), messagesListViewController = this._createMessagesListViewController(id);
+        this.title = team.name;
+        this._addCloseIcon();
+        this.updateScore(id);
+
+        challengesListViewController.addEventListener(BGTeamChallengesListViewController.SCORE_CHANGE_NOTIFICATION_TYPE, this._onScoreChanged.bind(this));
+        challengesListViewController.setup();
+        this.embedController(challengesListViewController, BGIndexController.ControllerPosition.right);
+
+        messagesListViewController.setup();
+        this.embedController(messagesListViewController, BGIndexController.ControllerPosition.bottomLeft);
+    }
+
+    /**
+     * this method is used to display group-controllers
+     * @param {BGListViewItemData} team the data object of the selected listview item to represent a team
+     */
+    presentGroup(team) {
+        this.presentChat(team);
+
+        const membersListViewController = this._createMembersListViewController(team.id);
+        membersListViewController.setup();
+        this.embedController(membersListViewController, BGIndexController.ControllerPosition.topLeft);
+    }
+
+    /**
+     * this method is used to set the navigation button icon to the leading character of the users name
+     */
+    _setIcon() {
+        const user = AppWriteAuthentication.sharedInstance.user;
+        if (user === undefined) { return; }
+        this.iconButton.text = user.name[0].toUpperCase();
+    }
+
+    /**
+     * this method is used to handle score changes, it triggers an update of the score label and the leaderboard controller
+     * @param {Event} event 
+     */
+    _onScoreChanged(event) {
+        const controller = event.data;
+
+        this.updateScore(controller.containerId);
+        this._updateLeaderboardIfPossible();
+    }
+
+    /**
+     * this method is used to update the leaderboard if a leaderboard controller exists
+     */
+    _updateLeaderboardIfPossible() {
+        const leaderboardController = this.embeddedControllers.find(embeddedController => embeddedController instanceof BGLeaderboardController);
+        if (leaderboardController !== undefined) { leaderboardController.updateSections(); }
+    }
+
+    /**
+     * this method is used to create the embedded controllers suitable for the start state
+     */
+    _createControllers() {
+        const teamsListViewController = this._createTeamsListViewController(), challengesViewController = this._createChallengesListViewController(), leaderboardViewController = this._createLeaderboardViewController();
+        this.embedController(teamsListViewController, BGIndexController.ControllerPosition.topLeft);
+
+        challengesViewController.addEventListener(BGChallengesListViewController.SCORE_CHANGE_NOTIFICATION_TYPE, this._onScoreChanged.bind(this));
+        this.embedController(challengesViewController, BGIndexController.ControllerPosition.right);
+
+        this.embedController(leaderboardViewController, BGIndexController.ControllerPosition.bottomLeft);
+    }
+
+    _createTeamsListViewController() {
+        const teamsListViewController = new BGTeamsListViewController();
+        teamsListViewController.title = "Kontakte";
+        teamsListViewController.addEventListener(BGTeamsListViewController.GROUP_SELECTED_NOTIFICATION_TYPE, this._onGroupSelected.bind(this));
+        teamsListViewController.addEventListener(BGTeamsListViewController.CHAT_SELECTED_NOTIFICATION_TYPE, this._onChatSelected.bind(this));
+
+        teamsListViewController.view.minWidth = "350px";
+
+        return teamsListViewController;
+    }
+
+    _createChallengesListViewController() {
+        const challengesViewController = new BGChallengesListViewController();
+        challengesViewController.title = "Challenges";
+
+        return challengesViewController;
+    }
+
+    _createLeaderboardViewController() {
+        const leaderboardViewController = new BGLeaderboardController();
+        leaderboardViewController.title = "Leaderboard";
+
+        return leaderboardViewController;
+    }
+
+    /**
+     * the methods below are used to create and setup embedded controllers to display on detail state
+     */
+    _createMembersListViewController(id) {
+        const membersListViewController = new BGMembersListViewController(id);
+        membersListViewController.view.minWidth = "350px";
+        membersListViewController.title = "Mitglieder";
+
+        return membersListViewController;
+    }
+
+    _createMessagesListViewController(id) {
+        const messagesListViewController = new BGMessagesListViewController(id);
+        messagesListViewController.title = "Chat";
+        messagesListViewController.view.minWidth = "350px";
+
+        return messagesListViewController;
+    }
+
+    _createTeamChallengesListViewController(id) {
+        const challengesListViewController = new BGTeamChallengesListViewController(id);
+        challengesListViewController.title = "Challenges";
+
+        return challengesListViewController;
+    }
+
+    /**
+    * below are several functions to create views an manage the controllers view hierarchy. 
+    */
     _createIcon() {
         const icon = new Icon();
         icon.color = Color.white;
         icon.fontSize = "17px";
+        icon.pointerEvents = Icon.PointerEvents.none;
+        icon.classList.add("fa-solid");
 
         return icon;
     }
 
     _createCloseIcon() {
         const icon = this._createIcon();
-        icon.classList.add("fa-solid", "fa-close");
+        icon.classList.add("fa-close");
 
         return icon;
     }
 
     _createLogoutIcon() {
         const icon = this._createIcon();
-        icon.classList.add("fa-solid", "fa-sign-out");
-        icon.pointerEvents = "none";
+        icon.classList.add("fa-sign-out");
 
         return icon;
     }
 
+    _createTitleView() {
+        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.center, Gap.all("10px")), titleLabel = this._createTitleLabel();
 
-    _applyMode() {
-        const mode = this.mode;
+        this._titleLabel = titleLabel;
+        stackView.addView(titleLabel);
 
-        switch (mode) {
-            case BGIndexController.Mode.start:
-                this.controllers.forEach(parentController => parentController.controllers.forEach(controller => controller.removeFromParentController()));
-                break;
-            case BGIndexController.Mode.group:
-                const memberListViewController = new BGMembersListViewController
-            case BGIndexController.Mode.chat:
-                break;
-            default:
-                throw new Error(`Unsupported mode: ${mode}`);
-        }
+        return stackView;
     }
 
-    get stackedControllers() {
-        return this._stackedControllers;
+    _createIconButton() {
+        const button = new Button();
+
+        button.minWidth = "50px";
+        button.minHeight = "50px";
+        button.textAlignment = Label.TextAlignment.center;
+        button.color = Color.white;
+        button.fontFamily = Label.FontFamily.sansSerif;
+        button.padding = Padding.all("15px");
+        button.backgroundColor = Color.darkGreen;
+        button.borders = Borders.all(Border.none);
+        button.corners = Corners.all(new RoundedCorner("25px"));
+        button.fontWeight = Label.FontWeight.bold;
+        button.fontSize = "17px";
+        button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onIconButtonPressed.bind(this));
+        button.addEventListener(Button.BUTTON_MOUSE_OVER_NOTIFICATION_TYPE, this._onIconButtonMouseOver.bind(this));
+        button.addEventListener(Button.BUTTON_MOUSE_OUT_NOTIFICATION_TYPE, this._onIconButtonMouseOut.bind(this));
+
+        return button;
     }
 
-    removeStackedControllers() {
-        this.mode = BGIndexController.Mode.start;
-        this.stackedControllers.forEach(controller => controller.removeFromParentController());
-        this.controllers.forEach(controller => controller.view.isHidden = false);
-        this._removeCloseIcon();
-        this._setIcon();
+    _createPreviewManager() {
+        const previewManager = new BGPreviewDocumentManager();
 
-        this.title = "BeGreen";
+        return previewManager;
     }
 
-    embedStackedController(controller, position) {
-        this.stackedControllers.push(controller);
+    _createNavigationView() {
+        const navigation = new Navigation(), stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.center), titleView = this._createTitleView(), infoView = this._createInfoView();
 
-        this.embedController(controller, position);
+        stackView.backgroundColor = Color.white;
+        stackView.height = "75px";
+        stackView.padding = Padding.horizontal("15px");
+        stackView.borders = Borders.bottom(new Border(Color.darkGrey, "1px"));
+        stackView.shadow = new BoxShadow("0px", "5px", new Color(0, 0, 0, 0.25), "5px", "3px");
+
+        stackView.addView(titleView);
+
+        stackView.addView(infoView);
+        navigation.addView(stackView);
+
+        return navigation;
     }
 
-    constructor(mode = BGIndexController.Mode.start) {
-        super();
+    _createContentView() {
+        const grid = new Grid();
 
-        this.mode = mode;
+        grid.columns = "1fr 4fr";
+        grid.rows = "1fr 1fr";
+        grid.gap = Gap.all("15px");
+        grid.padding = Padding.all("15px");
+        grid.minHeight = "0";
 
-        this._stackedControllers = [];
-
-        this._ensureAuthentication();
-
-        this._createControllers();
-
-        this._setIcon();
-
-        (async () => {
-            await this._updateScore();
-        })();
+        return grid;
     }
 
-    async _updateScore() {
-        const client = AppWriteClient.sharedInstance.client;
-        const databases = new Databases(client, AppWriteConfig.DATABASE_SHARED_ID);
+    _createTitleLabel() {
+        const label = new Label();
 
-        const userId = AppWriteAuthentication.sharedInstance.user.$id;
+        label.text = "BeGreen";
+        label.color = Color.darkGreen;
+        label.fontFamily = Label.FontFamily.sansSerif;
+        label.fontWeight = Label.FontWeight.bold;
+        label.fontSize = "20px";
+        this._titleLabel = label;
 
-        const previewResult = await databases.listDocuments(AppWriteConfig.DATABASE_SHARED_COLLECTION_PREVIEW_ID, [Query.equal("$id", userId)]);
-        let score = 0;
-        const documents = previewResult.documents;
-        if (documents.length > 0) score = documents[0].score;
-
-        this.score = score;
+        return label;
     }
 
-    _onTeamSelected(event) {
-        this.removeStackedControllers();
-        this.mode = BGIndexController.Mode.detail;
-        this.controllers.forEach(controller => controller.view.isHidden = true);
+    _createScoreLabel() {
+        const label = new Label();
 
-        const teamView = event.data;
-        const team = teamView.data;
-        const id = team.id;
+        label.textAlignment = Label.TextAlignment.center;
+        label.color = Color.darkGreen;
+        label.fontFamily = Label.FontFamily.sansSerif;
+        label.padding = Padding.axes("20px", "10px");
+        label.backgroundColor = Color.lightGrey;
+        label.corners = Corners.all(new RoundedCorner("10px"));
+        label.fontSize = "22px";
 
-        this.title = team.name;
-        this._addCloseIcon();
-        //this.mode = BGIndexController.Mode.group;
-        const membersController = new BGMembersListViewController(id);
-        membersController.view.minWidth = "350px";
-        membersController.title = "Mitglieder";
-        this.embedStackedController(membersController, BGRootViewController.ControllerPosition.topLeft);
-
-        const challengesController = new BGTeamChallengesListViewController(id);
-        challengesController.title = "Challenges";
-        this.embedStackedController(challengesController, BGRootViewController.ControllerPosition.right);
-
-        const bottomLeftController = new BGMessageListViewController(id);
-        bottomLeftController.title = "Chat";
-        this.embedStackedController(bottomLeftController, BGRootViewController.ControllerPosition.bottomLeft);
+        return label;
     }
 
-    _onStateChange() {
-        //todo den controllern hier sagen, dass sie updaten können, wenn authenticated
+    _createInfoView() {
+        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.center, Gap.all("10px")), scoreLabel = this._createScoreLabel(), iconButton = this._createIconButton();
+
+        this._scoreLabel = scoreLabel;
+        stackView.addView(scoreLabel);
+
+        this._iconButton = iconButton;
+        stackView.addView(iconButton);
+
+        return stackView;
     }
 
-    _setIcon() {
-        const user = AppWriteAuthentication.sharedInstance.user;
-        if (user === undefined) return;
-        this.iconButton.text = user.name[0].toUpperCase();
-    }
+    _createView() {
+        const view = super._createView(), navigationView = this._createNavigationView(), contentView = this._createContentView();
+        view.backgroundColor = Color.darkGreen;
+        view.backgroundSize = "cover";
+        view.backgroundImage = `url(${image})`;
 
-    _createControllers() {
+        navigationView.zIndex = "1";
+        this._navigationView = navigationView;
+        view.addView(navigationView);
 
-        const controller = new BGTeamsListViewController();
-        controller.title = "Kontakte";
-        controller.addEventListener(BGListViewItemView.ITEM_VIEW_SELECTED_NOTIFICATION_TYPE, this._onTeamSelected.bind(this));
-        controller.view.minWidth = "350px";
-        this.embedController(controller, BGRootViewController.ControllerPosition.topLeft);
+        contentView.grow = "1";
 
-        const topLeftController = new BGChallengesListViewController();
-        topLeftController.title = "Challenges";
-        this.embedController(topLeftController, BGRootViewController.ControllerPosition.right);
-
-        const bottomLeftController = new BGLeaderboardController();
-        bottomLeftController.title = "Leaderboard";
-        this.embedController(bottomLeftController, BGRootViewController.ControllerPosition.bottomLeft);
-    }
-
-    _ensureAuthentication() {
-        const authentication = AppWriteAuthentication.sharedInstance;
-        if (authentication.isAuthenticated === false) this._presentAuthenticationController();
-        authentication.addEventListener(AppWriteAuthentication.APPWRITEAUTHENTICATION_DEAUTHENTICATED_NOTIFICATION_TYPE, this._presentAuthenticationController.bind(this));
-    }
-
-    _presentAuthenticationController() {
-        const authController = new BGAuthController();
-        this.addController(authController);
+        this._contentView = contentView;
+        view.addView(contentView);
     }
 }

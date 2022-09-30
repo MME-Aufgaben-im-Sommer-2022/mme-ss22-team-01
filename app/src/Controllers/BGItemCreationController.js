@@ -1,38 +1,31 @@
-"use strict";
-
 import { Color, Controller, Padding } from "../UI/libs/WrappedUI.js";
 import { Event } from "../utils/Observable.js";
 
-export default class BGItemCreationController extends Controller {//todo umbennen
+/**
+ * this controller is the base controller for the creation of new items.
+ */
+export default class BGItemCreationController extends Controller {
 
-    constructor(containerId) {
-        super();
-
-        this._containerId = containerId;
-    }
-
-    get containerId() {
-        return this._containerId;
-    }
-
+    /**
+     * a constant to label an event to signify that a new item has been created
+     */
     static get ITEM_CONFIGURATION_FINISHED_NOTIFICATION_TYPE() {
         return "finish";
-    } //TODO remove classnames from other classes
+    }
 
-    static get ITEM_CONFIGURATION_CANCELLED_NOTIFICATION_TYPE() {
-        return "cancel";
-    } //TODO remove classnames from other classes
-
-    _onConfigurationFinished() {
-        const event = new Event(BGItemCreationController.ITEM_CONFIGURATION_FINISHED_NOTIFICATION_TYPE, this);
+    /**
+     * this method is called to notify observers if an item has been created and to supply them with its data 
+     * @param {object} data an object to pass through to observers
+     */
+    _onConfigurationFinished(data) {
+        const event = new Event(BGItemCreationController.ITEM_CONFIGURATION_FINISHED_NOTIFICATION_TYPE, data);
         this.notifyAll(event);
     }
 
-    _onConfigurationCancelled() {
-        const event = new Event(BGItemCreationController.ITEM_CONFIGURATION_CANCELLED_NOTIFICATION_TYPE, this);
-        this.notifyAll(event);
-    }
-
+    /**
+     * this method is overridden to setup the main view of the controller
+     * @returns the main view of the controller
+     */
     _createView() {
         const view = super._createView();
         view.backgroundColor = Color.white;
@@ -40,5 +33,4 @@ export default class BGItemCreationController extends Controller {//todo umbenne
 
         return view;
     }
-
 }

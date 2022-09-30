@@ -1,15 +1,15 @@
-"use strict";
-
-
 import BGItemCreationController from "./BGItemCreationController.js";
 import BGChallengeCreationSectionView from "../UI/Views/BGChallengeCreationSectionView.js";
-import { Button, Color, Corners, Gap, Padding, RoundedCorner, Borders, Border, View } from "../UI/libs/WrappedUI.js";
-import { Databases } from "appwrite";
-import AppWriteClient from "../AppWrite/AppWriteClient.js";
-import AppWriteConfig from "../AppWrite/AppWriteConfig.js";
+import { Gap, View } from "../UI/libs/WrappedUI.js";
 
+/**
+ * this class is used to present the user with an controller to create new challenges and report new items back to its presenting controller if applicable
+ */
 export default class BGChallengeCreationController extends BGItemCreationController {
 
+    /**
+     * getters to access ui elements
+     */
     get cancelButton() {
         return this._cancelButton;
     }
@@ -18,39 +18,22 @@ export default class BGChallengeCreationController extends BGItemCreationControl
         return this._challengeView;
     }
 
+    /*
+    * below are two functions to create views an manage the controllers view hierarchy. 
+     */
     _createView() {
-        const view = super._createView();
-
+        const view = super._createView(), challengeView = this._createChallengeView();
         view.gap = Gap.all("10px");
         view.overflow = View.Overflow.hidden;
 
-        const challengeView = this._createChallengeView();
         this._challengeView = challengeView;
         view.addView(challengeView);
-
-        const cancelButton = this._createCancelButton();
-        view.addView(cancelButton);
-        this._cancelButton = cancelButton;
 
         return view;
     }
 
-    _createCancelButton() {
-        const button = new Button();
-        button.borders = Borders.all(new Border(Color.green, "2px"));
-        button.backgroundColor = Color.darkGreen;
-        button.color = Color.white;
-        button.fontSize = "15px";
-        button.padding = Padding.axes("10px", "3px");
-        button.text = "cancel";
-        button.corners = Corners.all(new RoundedCorner("10px"))
-        button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onConfigurationCancelled.bind(this));
-
-        return button;
-    }
-
     _createChallengeView() {
-        const challengeView = new BGChallengeCreationSectionView(); //TODO erstellen; 
+        const challengeView = new BGChallengeCreationSectionView();
         challengeView.title = "Challenge erstellen";
         challengeView.hint = "erstellen";
         challengeView.placeholder = "Titel";
@@ -59,32 +42,13 @@ export default class BGChallengeCreationController extends BGItemCreationControl
         return challengeView;
     }
 
+    /**
+     * this method is used to notify observers if a new item has been created and the user decided to submit
+     * @param {Event} event an event to represent a label and challenge data
+     */
     _onChallengeSubmit(event) {
-        const challengeView = event.data;
-        const duration = challengeView.duration;
-        const score = challengeView.score;
-        const name = challengeView.name;
-        const description = challengeView.description;
+        const challengeView = event.data, data = { duration: challengeView.duration, score: challengeView.score, title: challengeView.name, description: challengeView.description };
 
-        (async () => {
-            await this._createChallenge(duration, score, name, description);
-            this._onConfigurationFinished();
-        })();
-
-    }
-
-    async _createChallenge(duration, score, name, description) {
-        const client = AppWriteClient.sharedInstance.client;
-        const databases = new Databases(client, AppWriteConfig.DATABASE_SHARED_ID);
-
-        const containerId = this.containerId;
-
-        // todo überarbeiten 
-
-        await databases.createDocument(AppWriteConfig.DATABASE_SHARED_COLLECTION_CHALLENGES_ID, "unique()", {
-            title: name, description: description, score: score, author: containerId, origin: containerId, duration: duration
-        });
-
-
+        this._onConfigurationFinished(data);
     }
 }

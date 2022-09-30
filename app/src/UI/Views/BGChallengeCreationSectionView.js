@@ -1,17 +1,40 @@
-"use strict";
-
 import { Border, Borders, Color, Gap, Margin, Padding, Select, StackView, TextArea } from "../libs/WrappedUI.js";
 import BGItemCreationSectionView from "./BGItemCreationSectionView.js";
 
+/**
+ * this method is used to extend the superview to handle challange creation by adding a second text field for descriptions.
+ */
 export default class BGChallengeCreationSectionView extends BGItemCreationSectionView {
-    constructor(){
-        super();
-    }  
+
+    /**
+     * the getters/setters below are used to manage access to ui elements and their properties
+     */
+    get durationSelect() {
+        return this._durationSelect;
+    }
+
+    get scoreSelect() {
+        return this._scoreSelect;
+    }
+
+    get duration() {
+        const selectedOption = this.durationSelect.selectedOption;
+
+        if (selectedOption === undefined) { throw new Error("Failed to retrieve selected option"); }
+        return Number(selectedOption.value);
+    }
+
+    get score() {
+        const selectedOption = this.scoreSelect.selectedOption;
+
+        if (selectedOption === undefined) { throw new Error("Failed to retrieve selected option"); }
+        return Number(selectedOption.value);
+    }
 
     get descriptionTextArea() {
         return this._descriptionTextArea;
     }
-    
+
     get description() {
         return this.descriptionTextArea.text;
     }
@@ -24,6 +47,9 @@ export default class BGChallengeCreationSectionView extends BGItemCreationSectio
         return this._tagContainerView;
     }
 
+    /**
+     * the methods below are used to create/manage the view hierarchy
+     */
     _createContentView() {
         const contentView = super._createContentView();
         contentView.crossAxisAlignment = StackView.CrossAxisAlignment.flexEnd;
@@ -32,34 +58,21 @@ export default class BGChallengeCreationSectionView extends BGItemCreationSectio
     }
 
     _createLeadingContainer() {
-        const stackView = super._createLeadingContainer();
+        const stackView = super._createLeadingContainer(), descriptionTextArea = this._createDescriptionTextArea(), tagContainerView = this._createTagContainerView();
         stackView.axis = StackView.Axis.vertical;
         stackView.mainAxisAlignment = StackView.MainAxisAlignment.center;
         stackView.crossAxisAlignment = StackView.CrossAxisAlignment.stretch;
         stackView.grow = "1";
         stackView.gap = Gap.all("2px");
 
-        const descriptionTextArea = this._createDescriptionTextArea();
         this._descriptionTextArea = descriptionTextArea;
         stackView.addView(descriptionTextArea);
 
-        const tagContainerView = this._createTagContainerView();
         stackView.addView(tagContainerView);
         this._tagContainerView = tagContainerView;
-        
+
         return stackView;
     }
-/*
-    _createTrailingContainer() {
-        const trailingContainer = super._createTrailingContainer();
-
-        const startButton = this._createButton();
-        this._startButton = startButton;
-        trailingContainer.addView(startButton);
-
-        return trailingContainer;
-    }
-*/
 
     _createDescriptionTextArea() {
         const textArea = new TextArea();
@@ -70,10 +83,12 @@ export default class BGChallengeCreationSectionView extends BGItemCreationSectio
         textArea.placeholder = "Beschreibung";
         textArea.backgroundColor = Color.transparent;
         textArea.fontSize = "15px";
-//        textArea.grow = "1";
+        textArea.isRequired = true;
+        textArea.maxLength = 512;
+        textArea.minLength = 4;
         textArea.minHeight = "50px";
-        textArea.maxHeight = "300px"
-        textArea.borders = Borders.all(Border.none); //todo dafür static get
+        textArea.maxHeight = "300px";
+        textArea.borders = Borders.all(Border.none);
         textArea.addEventListener(TextArea.TEXT_FIELD_CHANGE_NOTIFICATION_TYPE, this._onNameChange.bind(this));
         textArea.addEventListener(TextArea.TEXT_FIELD_KEYPRESS_NOTIFICATION_TYPE, this._onNameChange.bind(this));
         textArea.addEventListener(TextArea.TEXT_FIELD_PASTE_NOTIFICATION_TYPE, this._onNameChange.bind(this));
@@ -82,37 +97,13 @@ export default class BGChallengeCreationSectionView extends BGItemCreationSectio
         return textArea;
     }
 
-    get durationSelect() {
-        return this._durationSelect;
-    }
-
-    get scoreSelect() {
-        return this._scoreSelect;
-    }
-
-    get duration() {
-        const selectedOption = this.durationSelect.selectedOption;
-
-        if (selectedOption === undefined) return;
-        return Number(selectedOption.value);
-    }
-
-    get score() {
-        const selectedOption = this.scoreSelect.selectedOption;
-
-        if (selectedOption === undefined) return;
-        return Number(selectedOption.value);
-    }
-
     _createTagContainerView() {
-        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.center, Gap.all("5px"));
+        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.center, Gap.all("5px")), durationSelect = this._createDurationSelect(), scoreSelect = this._createScoreSelect();
         stackView.margin = Margin.top("10px");
 
-        const durationSelect = this._createDurationSelect();
         this._durationSelect = durationSelect;
         stackView.addView(durationSelect);
 
-        const scoreSelect = this._createScoreSelect();
         this._scoreSelect = scoreSelect;
         stackView.addView(scoreSelect);
 
@@ -144,5 +135,13 @@ export default class BGChallengeCreationSectionView extends BGItemCreationSectio
         select.backgroundColor = Color.darkGreen;
 
         return select;
+    }
+
+    /**
+     * this method is overridden from its superclass to include the description field during input validation.
+     * @returns a boolean flag
+     */
+    _validate() {
+        return super._validate() && this.descriptionTextArea.validate();
     }
 }

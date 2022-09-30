@@ -1,7 +1,3 @@
-"use strict";
-
-//TODO zitieren
-
 class Event {
     constructor(type, data) {
         this.type = type;

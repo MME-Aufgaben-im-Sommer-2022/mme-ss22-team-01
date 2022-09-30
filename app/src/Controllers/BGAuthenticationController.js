@@ -1,35 +1,63 @@
-"use strict";
-
+/*eslint no-magic-numbers: "off"*/
 import AppWriteAuthentication from "../AppWrite/AppWriteAuthentication.js";
-import BGIndexController from "./BGIndexController.js";
-import { TextField, Border, Borders, BoxShadow, Color, Corners, Label, Padding, RoundedCorner, StackView, View, Gap, Margin, Button, RootController } from "../UI/libs/WrappedUI.js";
+import { TextField, Border, Borders, BoxShadow, Color, Corners, Label, Padding, RoundedCorner, StackView, View, Gap, Margin, Button, Controller } from "../UI/libs/WrappedUI.js";
 import image from "../../public/muneeb-syed-x9NfeD3FpsE-blur-10-unsplash.jpg";
+import Logger from "../utils/Logger.js";
 
-export default class BGAuthController extends RootController {
+/**
+ * this controller is used for logging users in and out and for creating new users
+ */
+export default class BGAuthenticationController extends Controller {
 
-    constructor(mode = BGAuthController.Mode.login) {
+    constructor(mode = BGAuthenticationController.Mode.login) {
         super();
 
         this.mode = mode;
     }
 
+    /**
+     * constant to be used as a login button label
+     */
+    static get LOGIN_BUTTON_HINT_TEXT() {
+        return "Anmelden";
+    }
+
+    /**
+    * constant to be used as a register button label
+     */
+    static get REGISTER_BUTTON_HINT_TEXT() {
+        return "Registrieren";
+    }
+
+    /**
+     * this constant is used to distinguish between the login or the signup state of the controller
+     */
     static get Mode() {
         return Object.freeze({
-            login: "Anmelden",
-            register: "Registrieren"
+            login: "login",
+            register: "register",
         });
     }
 
+    /**
+     * a getter to obtain the current mode 
+     */
     get mode() {
         return this._mode;
     }
 
+    /**
+     * a setter to manipulate the current mode
+     */
     set mode(value) {
         this._mode = value;
 
         this._updateMode();
     }
 
+    /*
+     * a variety of getters and setters to access textfields and their corresponding values
+     */
     get title() {
         return this.label.text;
     }
@@ -106,8 +134,11 @@ export default class BGAuthController extends RootController {
         return this._contentView;
     }
 
+    /*
+    * below are several functions to create views an manage the controllers view hierarchy. 
+    */
     _createView() {
-        const view = super._createView();
+        const view = super._createView(), contentView = this._createContentView();
 
         view.position = View.Position.absolute;
         view.left = "0px";
@@ -121,7 +152,6 @@ export default class BGAuthController extends RootController {
         view.backgroundSize = "cover";
         view.backgroundImage = `url(${image})`;
 
-        const contentView = this._createContentView();
         this._contentView = contentView;
         view.addView(contentView);
 
@@ -129,31 +159,21 @@ export default class BGAuthController extends RootController {
     }
 
     _createContentView() {
-        const stackView = new StackView(StackView.Axis.vertical, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.stretch);
+        const stackView = new StackView(StackView.Axis.vertical, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.stretch), label = this._createLabel(), textFieldContainerView = this._createTextFieldContainerView(), buttonContainerView = this._createButtonContainerView();
         stackView.gap = Gap.all("25px");
         stackView.width = "325px";
 
-
-        //stackView.minWidth = "200px";
-        //stackView.width = "30%"; //Todo width implizit durch textField?
-        //stackView.height = "300px";
-        //stackView.padding = Padding.all("50px");
-
-        const label = this._createLabel();
         stackView.addView(label);
         this._label = label;
 
-        const textFieldContainerView = this._createTextFieldContainerView();
         stackView.addView(textFieldContainerView);
-
-        const buttonContainerView = this._createButtonContainerView();
         stackView.addView(buttonContainerView);
 
         return stackView;
     }
 
     _createTextFieldContainerView() {
-        const stackView = new StackView(StackView.Axis.vertical, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.stretch);
+        const stackView = new StackView(StackView.Axis.vertical, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.stretch), mailTextField = this._createMailTextField(), nameTextField = this._createNameTextField(), passwordTextField = this._createPasswordTextField();
 
         stackView.gap = Gap.all("2px");
         stackView.overflow = StackView.Overflow.hidden;
@@ -162,15 +182,12 @@ export default class BGAuthController extends RootController {
         stackView.corners = Corners.all(new RoundedCorner("10px"));
         stackView.backgroundColor = Color.darkGreen;
 
-        const mailTextField = this._createMailTextField(); // da einfach createTextField, placeholder, mode
         stackView.addView(mailTextField);
         this._mailTextField = mailTextField;
 
-        const nameTextField = this._createNameTextField();
         stackView.addView(nameTextField);
         this._nameTextField = nameTextField;
 
-        const passwordTextField = this._createPasswordTextField();
         stackView.addView(passwordTextField);
         this._passwordTextField = passwordTextField;
 
@@ -178,13 +195,11 @@ export default class BGAuthController extends RootController {
     }
 
     _createButtonContainerView() {
-        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.center, Gap.all("10px"));
+        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.center, Gap.all("10px")), modeButton = this._createModeButton(), submitButton = this._createSubmitButton();
 
-        const modeButton = this._createModeButton();
         this._modeButton = modeButton;
         stackView.addView(modeButton);
 
-        const submitButton = this._createSubmitButton();
         this._submitButton = submitButton;
         stackView.addView(submitButton);
 
@@ -203,121 +218,131 @@ export default class BGAuthController extends RootController {
         return label;
     }
 
-    _createNameTextField() {
+    _createTextField() {
         const textField = new TextField();
-        //textField.backgroundColor = Color.white;
-        //textField.corners = Corners.all(new RoundedCorner("10px"));
         textField.fontFamily = TextField.FontFamily.sansSerif;
         textField.margin = Margin.zero;
         textField.fontSize = "17px";
         textField.padding = Padding.axes("10px", "7px");
-        textField.placeholder = "name";
-        textField.borders = Borders.unset;//  all(new Border(Color.darkGreen, "2px"));
+        textField.borders = Borders.all(Border.none);
+        textField.corners = Corners.all(new RoundedCorner("1px"));
+        textField.isRequired = true;
+
+        return textField;
+    }
+
+    _createNameTextField() {
+        const textField = this._createTextField();
+        textField.placeholder = "Name";
+        textField.minLength = 4;
 
         return textField;
     }
 
     _createPasswordTextField() {
-        const textField = new TextField();
+        const textField = this._createTextField();
+        textField.placeholder = "Passwort";
         textField.textInputType = TextField.TextInputType.password;
-        textField.margin = Margin.zero;
-        //textField.backgroundColor = Color.white;
-        //textField.corners = Corners.all(new RoundedCorner("10px"));
-        textField.fontFamily = TextField.FontFamily.sansSerif;
-        textField.fontSize = "17px";
-        textField.padding = Padding.axes("10px", "7px");
-        textField.placeholder = "password";
-        //textField.borders = Borders.all(new Border(Color.darkGreen, "2px"));
+        textField.minLength = 4;
+        textField.maxLength = 32;
 
         return textField;
     }
 
     _createMailTextField() {
-        const textField = new TextField();
+        const textField = this._createTextField();
+        textField.placeholder = "Mail";
         textField.textInputType = TextField.TextInputType.email;
-        textField.margin = Margin.zero;
-        //textField.backgroundColor = Color.white;
-        //textField.corners = Corners.all(new RoundedCorner("10px"));
-        textField.fontFamily = TextField.FontFamily.sansSerif;
-        textField.fontSize = "17px";
-        textField.padding = Padding.axes("10px", "7px");
-        textField.placeholder = "mail";
-        //textField.borders = Borders.all(new Border(Color.darkGreen, "2px"));
 
         return textField;
     }
 
-    _createModeButton() {
+    _createButton() {
         const button = new Button();
-
-        button.text = "modeButton";
-        button.color = Color.white;
         button.fontFamily = Button.FontFamily.sansSerif;
-        button.fontSize = "15px";
         button.padding = Padding.axes("15px", "5px");
+        button.corners = Corners.all(new RoundedCorner("10px"));
+        button.fontSize = "15px";
+
+        return button;
+    }
+
+    _createModeButton() {
+        const button = this._createButton();
+
+        button.color = Color.white;
         button.backgroundColor = Color.transparent;
         button.borders = Borders.all(Border.none);
-        button.corners = Corners.all(new RoundedCorner("10px"));
         button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._switchMode.bind(this));
 
         return button;
     }
 
-    _createSubmitButton() { //Todo eine methode createbutton und dann hier nur noch die custom actions, viel duplizierter code
-        const button = new Button();
+    _createSubmitButton() {
+        const button = this._createButton();
 
-        button.text = "submitButton";
         button.color = Color.darkGreen;
-        button.fontFamily = Button.FontFamily.sansSerif;
-        button.fontSize = "15px";
-        button.padding = Padding.axes("15px", "5px");
         button.backgroundColor = Color.white;
         button.borders = Borders.all(new Border(Color.darkGreen, "2px"));
-        button.corners = Corners.all(new RoundedCorner("10px"));
         button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._submit.bind(this));
 
         return button;
     }
 
+    /**
+     * this method gets called upon mode change to update the view and hide/show corresponding textfields
+     */
     _updateMode() {
-        switch (this.mode) { // Todo des kann noch gekürzt werden wenn da nichts mehr dazukommt
-            case BGAuthController.Mode.login:
+        const mode = this.mode;
+
+        switch (mode) {
+            case BGAuthenticationController.Mode.login:
                 this.nameTextField.isHidden = true;
-                this.modeHint = BGAuthController.Mode.register;
-                this.submitHint = BGAuthController.Mode.login;
+                this.modeHint = BGAuthenticationController.REGISTER_BUTTON_HINT_TEXT;
+                this.submitHint = BGAuthenticationController.LOGIN_BUTTON_HINT_TEXT;
                 break;
-            case BGAuthController.Mode.register:
+            case BGAuthenticationController.Mode.register:
                 this.nameTextField.isHidden = false;
-                this.modeHint = BGAuthController.Mode.login;
-                this.submitHint = BGAuthController.Mode.register;
+                this.modeHint = BGAuthenticationController.LOGIN_BUTTON_HINT_TEXT;
+                this.submitHint = BGAuthenticationController.REGISTER_BUTTON_HINT_TEXT;
                 break;
             default:
-                throw new Error("Unsupported mode");
+                throw new Error(`Unsupported mode ${mode}`);
         }
     }
 
+    /**
+     * this method is used to toggle between login and signup mode
+     */
     _switchMode() {
-        this.mode = this.mode === BGAuthController.Mode.login ? BGAuthController.Mode.register : BGAuthController.Mode.login;
+        this.mode = this.mode === BGAuthenticationController.Mode.login ? BGAuthenticationController.Mode.register : BGAuthenticationController.Mode.login;
     }
 
+    /**
+     * this method is invoked if the user clicks the submit button to login/signup accounts. It validates inputs and contacts the appwrite api to sign users in.
+     */
     async _submit() {
         const contentView = this.contentView;
-        contentView.isDisabled = true;
         try {
-            switch (this.mode) { // Todo des kann noch gekürzt werden wenn da nichts mehr dazukommt
-                case BGAuthController.Mode.login: // todo validate
+            const mode = this.mode;
+            switch (mode) {
+                case BGAuthenticationController.Mode.login:
+                    if ((this.mailTextField.validate() && this.passwordTextField.validate()) === false) { throw new Error("Failed to validate input"); }
+                    contentView.isDisabled = true;
                     await AppWriteAuthentication.sharedInstance.login(this.email, this.password);
                     break;
-                case BGAuthController.Mode.register:
+                case BGAuthenticationController.Mode.register:
+                    if ((this.mailTextField.validate() && this.nameTextField.validate() && this.passwordTextField.validate()) === false) { throw new Error("Failed to validate input"); }
+                    contentView.isDisabled = true;
                     await AppWriteAuthentication.sharedInstance.register(this.email, this.password, this.name);
                     break;
                 default:
-                    throw new Error("Unsupported mode");
+                    throw new Error(`Unsupported mode: ${mode}`);
             }
-            this.addController(new BGIndexController());
+            this.removeFromParentController();
         }
         catch (error) {
-            console.log(error);
+            Logger.sharedInstance.error(error);
         }
         finally {
             contentView.isDisabled = false;

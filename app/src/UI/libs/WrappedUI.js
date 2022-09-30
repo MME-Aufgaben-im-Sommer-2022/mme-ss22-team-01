@@ -1,24 +1,42 @@
-"use strict";
-
+/*eslint no-magic-numbers: "off"*/
 import Observable, { Event } from "../../utils/Observable.js";
 
-//TODO Style rules noch umsetzen auf fromStyleRule undso
-
 class ImplementationError extends Error { }
-
 class ColorParsingError extends Error { }
 
+/**
+ * this class is used as a base class for ui-objects that rely on multiple css-rules to define a state
+ */
 class Stylable {
-    static fromStyle(style) {
+    /**
+     * this method is used to derive an instance from css rules
+     */
+    static fromStyle() {
         throw new ImplementationError();
     }
 
+    /**
+     * this method is used to derive css rules from the objects-internal state
+     */
     toStyle() {
+        throw new ImplementationError();
+    }
+
+    /**
+     * compare wether two elements match each other
+     */
+    equals() {
         throw new ImplementationError();
     }
 }
 
+/**
+ * this class used to represent colors and derive them from css rules
+ */
 export class Color {
+    /**
+     * this constant is used to define patterns for the currently supported color formats
+     */
     static get Format() {
         return Object.freeze({
             hex: "(?:^|\\s+)#?(?:(?:(?<fullRed>[a-f\\d]{2})(?<fullGreen>[a-f\\d]{2})(?<fullBlue>[a-f\\d]{2})(?<fullAlpha>[a-f\\d]{2})?)|(?:(?<shortRed>[a-f\\d])(?<shortGreen>[a-f\\d])(?<shortBlue>[a-f\\d])(?<shortAlpha>[a-f\\d])?))(?:\\s+|$)",
@@ -37,6 +55,10 @@ export class Color {
         this._blue = blue;
         this._alpha = alpha;
     }
+
+    /**
+     * this getter/setter format is used to access the red, green, blue and alpha color components that internally represent the color
+     */
 
     get red() {
         return this._red;
@@ -70,71 +92,63 @@ export class Color {
         this._alpha = value;
     }
 
+    /**
+     * this method is used to create an rgb color rule to represent the color
+     * @returns a string as css rule
+     */
     toStyleRule() {
-        const components = `${this.red}, ${this.green}, ${this.blue}`;
-        const alpha = this.alpha;
-        const str = alpha === 1.0 ? `rgb(${components})` : `rgba(${components}, ${alpha})`;
+        const components = `${this.red}, ${this.green}, ${this.blue}`, alpha = this.alpha;
 
-        return str;
+        return alpha === 1.0 ? `rgb(${components})` : `rgba(${components}, ${alpha})`;
     }
 
+    /**
+     * this method is used to create a new instance from a css rule (as hex)
+     * @param {string} str 
+     * @returns 
+     */
     static fromHex(str) {
-        const regex = new RegExp(Color.Format.hex, "i");
+        const regex = new RegExp(Color.Format.hex, "i"), match = regex.exec(str), error = new ColorParsingError(`Cannot parse ${str} using hex format`);
 
-        const match = regex.exec(str);
-        const error = new ColorParsingError(`Cannot parse ${str} using hex format`);
+        if (match === null || match.groups === undefined) { throw error; }
 
-        if (match === null || match.groups === undefined) throw error;
+        let groups = match.groups, red = groups.shortRed, green = groups.shortGreen, blue = groups.shortBlue, alpha = "ff";
 
-        const groups = match.groups;
-
-        let red = groups.shortRed;
-        let green = groups.shortGreen;
-        let blue = groups.shortBlue;
-        let alpha = "ff";
-
-        if (red !== undefined && green !== undefined && blue !== undefined) { if (groups.shortAlpha !== undefined) alpha = groups.shortAlpha; }
+        if (red !== undefined && green !== undefined && blue !== undefined) { if (groups.shortAlpha !== undefined) { alpha = groups.shortAlpha; } }
         else if (groups.fullRed !== undefined && groups.fullGreen !== undefined && groups.fullBlue !== undefined) {
             red = groups.fullRed;
             green = groups.fullGreen;
             blue = groups.fullBlue;
             if (groups.fullAlpha !== undefined) { alpha = groups.fullAlpha; }
         }
-        else throw error;
+        else { throw error; }
 
-        const redComponent = parseInt(red.padStart(2, red), 16);
-        const greenComponent = parseInt(green.padStart(2, green), 16);
-        const blueComponent = parseInt(blue.padStart(2, blue), 16);
-        const alphaComponent = Number(parseInt(alpha.padStart(2, alpha), 16) / 255);
-
-        const color = new Color(redComponent, greenComponent, blueComponent, alphaComponent);
-
-        return color;
+        return new Color(parseInt(red.padStart(2, red), 16), parseInt(green.padStart(2, green), 16), parseInt(blue.padStart(2, blue), 16), Number(parseInt(alpha.padStart(2, alpha), 16) / 255));
     }
 
+    /**
+     * this method is used to create a new instance based on a css rule (in rgb)
+     * @param {string} str 
+     * @returns 
+     */
     static fromRGB(str) {
-        const regex = new RegExp(Color.Format.rgb, "i");
+        const regex = new RegExp(Color.Format.rgb, "i"), match = regex.exec(str);
 
-        const match = regex.exec(str);
+        if (match === null || match.groups === undefined) { throw new ColorParsingError(`Cannot parse ${str} using rgb(a) format`); }
 
-        if (match === null || match.groups === undefined) throw new ColorParsingError(`Cannot parse ${str} using rgb(a) format`);
+        let groups = match.groups, alphaComponent = 1.0;
+        if (groups.alpha !== undefined) { alphaComponent = Number(groups.alpha); }
 
-        const groups = match.groups;
-
-        const redComponent = parseInt(groups.red);
-        const greenComponent = parseInt(groups.green);
-        const blueComponent = parseInt(groups.blue);
-        let alphaComponent = 1.0;
-
-        if (groups.alpha !== undefined) alphaComponent = Number(groups.alpha);
-
-        const color = new Color(redComponent, greenComponent, blueComponent, alphaComponent);
-
-        return color;
+        return new Color(parseInt(groups.red), parseInt(groups.green), parseInt(groups.blue), alphaComponent);
     }
 
-
-    static fromStyleRule(str, format = undefined) { // todo hier noch regex neu machen: Quelle: https://gist.github.com/sethlopezme/d072b945969a3cc2cc11
+    /**
+     * this method is used to derive a new instance from any css color string within the known formats
+     * @param {string} str input string
+     * @param {string} format a specific format to be used
+     * @returns 
+     */
+    static fromStyleRule(str, format) {
         let color;
 
         switch (format) {
@@ -143,7 +157,7 @@ export class Color {
                     color = Color.fromRGB(str);
                 }
                 catch (error) {
-                    if ((error instanceof ColorParsingError) === false) throw error; // Todo review
+                    if ((error instanceof ColorParsingError) === false) { throw error; }
 
                     color = Color.fromHex(str);
                 }
@@ -160,7 +174,9 @@ export class Color {
         return color;
     }
 
-
+    /**
+     * the getter/setter pairs below define pre-defined web colors as constants
+     */
     static get white() {
         return new this(255, 255, 255);
     }
@@ -231,10 +247,6 @@ export class Color {
 
     static get grey() {
         return new this(128, 128, 128);
-    }
-
-    static get green() {
-        return new this(0, 128, 0);
     }
 
     static get gold() {
@@ -310,7 +322,9 @@ export class Color {
     }
 }
 
-
+/**
+ * this class is used to represent a generic shadow and convert it in css notation
+ */
 class Shadow {
     constructor(offsetX, offsetY, color = Color.black, blurRadius) {
         this._offsetX = offsetX;
@@ -336,44 +350,43 @@ class Shadow {
     }
 
     toStyleRule() {
-        const offsetX = this.offsetX;
-        const offsetY = this.offsetY;
-        const color = this.color;
-        const blurRadius = this.blurRadius;
+        const offsetX = this.offsetX, offsetY = this.offsetY, color = this.color, blurRadius = this.blurRadius;
 
-        if (offsetX === undefined) throw new Error("Cannot provide a style rule withou offsetX");
-        if (offsetY === undefined) throw new Error("Cannot provide a style rule withou offsetY");
+        if (offsetX === undefined) { throw new Error("Cannot provide a style rule withou offsetX"); }
+        if (offsetY === undefined) { throw new Error("Cannot provide a style rule withou offsetY"); }
 
         let str = `${offsetX} ${offsetY}`;
-        if (blurRadius !== undefined) str += ` ${blurRadius}`;
-        if (color !== undefined) str = `${color.toStyleRule()} ${str}`;
+        if (blurRadius !== undefined) { str += ` ${blurRadius}`; }
+        if (color !== undefined) { str = `${color.toStyleRule()} ${str}`; }
 
         return str;
     }
 
     static fromStyleRule(str) {
-        if (View._propertyIsSet(str) === false) throw new Error("Cannot parse data from unset property");
+        if (View._propertyIsSet(str) === false) { throw new Error("Cannot parse data from unset property"); }
 
-        const color = Color.fromStyleRule(str);
+        const color = Color.fromStyleRule(str), constraints = View._deriveConstrains(str), length = constraints.length;
 
-        const constraints = View._deriveConstrains(str);
-        const length = constraints.length;
+        let blurRadius, offsetX, offsetY;
 
-        if (length < 2) throw new Error("Cannot parse shadow information");
-        const offsetX = constraints[0];
-        const offsetY = constraints[1];
+        if (length < 2) { throw new Error("Cannot parse shadow information"); }
+        offsetX = constraints[0];
+        offsetY = constraints[1];
 
-        let blurRadius;
-        if (length > 2) blurRadius = constraints[2];
+        if (length > 2) { blurRadius = constraints[2]; }
 
         return new Shadow(offsetX, offsetY, color, blurRadius);
     }
 }
 
-export class TextShadow extends Shadow {
-    // todo static get shadow defaults
-}
+/**
+ * class alias
+ */
+export class TextShadow extends Shadow { }
 
+/**
+ * this class is used to implement shadow for box-contents
+ */
 export class BoxShadow extends Shadow {
     constructor(offsetX, offsetY, color, blurRadius, spreadRadius, inset = false) {
         super(offsetX, offsetY, color, blurRadius);
@@ -395,27 +408,24 @@ export class BoxShadow extends Shadow {
 
         let str = super.toStyleRule();
 
-        if (spreadRadius !== undefined) str += ` ${spreadRadius}`;
-        if (this.inset === true) str += ` inset`;
+        if (spreadRadius !== undefined) { str += ` ${spreadRadius}`; }
+        if (this.inset === true) { str += " inset"; }
 
         return str;
     }
 
     static fromStyleRule(str) {
-        const shadow = Shadow.fromStyleRule(str);
-
-        const inset = str.includes("inset");
-
-        const constraints = View._deriveConstrains(str);
+        const shadow = Shadow.fromStyleRule(str), inset = str.includes("inset"), constraints = View._deriveConstrains(str);
         let spreadRadius;
-        if (constraints.length > 3) spreadRadius = constraints[constraints.length - 1];
+        if (constraints.length > 3) { spreadRadius = constraints[constraints.length - 1]; }
 
         return new BoxShadow(shadow.offsetX, shadow.offsetY, shadow.color, shadow.blurRadius, spreadRadius, inset);
     }
-
-    // todo static get shadow defaults
 }
 
+/**
+ * this class is used to apply corner-styles to objects
+ */
 export class Corners extends Stylable {
     constructor(topLeft, topRight, bottomLeft, bottomRight) {
         super();
@@ -501,35 +511,25 @@ export class Corners extends Stylable {
     toStyle() {
         let style = {
             borderRadius: "",
-
-            /*
-            borderTopLeftRadius: "",
-            borderTopRightRadius: "",
-            borderBottomLeftRadius: "",
-            borderBottomRightRadius: ""
-            */
         };
 
-        const topLeft = this.topLeft;
-        const topRight = this.topRight;
-        const bottomLeft = this.bottomLeft;
-        const bottomRight = this.bottomRight;
+        const topLeft = this.topLeft, topRight = this.topRight, bottomLeft = this.bottomLeft, bottomRight = this.bottomRight;
 
         if (topLeft !== undefined && topLeft === topRight && topRight === bottomLeft && bottomLeft === bottomRight) {
             style.borderRadius = topLeft.radius;
         }
         else {
-            if (topLeft !== undefined) style.borderTopLeftRadius = topLeft.radius;
-            if (topRight !== undefined) style.borderTopRightRadius = topRight.radius;
-            if (bottomLeft !== undefined) style.borderBottomLeftRadius = bottomLeft.radius;
-            if (bottomRight !== undefined) style.borderBottomRightRadius = bottomRight.radius;
+            if (topLeft !== undefined) { style.borderTopLeftRadius = topLeft.radius; }
+            if (topRight !== undefined) { style.borderTopRightRadius = topRight.radius; }
+            if (bottomLeft !== undefined) { style.borderBottomLeftRadius = bottomLeft.radius; }
+            if (bottomRight !== undefined) { style.borderBottomRightRadius = bottomRight.radius; }
         }
 
         return style;
     }
 
     static fromStyle(style) {
-        const borderRadius = style.borderRadius;
+        const borderRadius = style.borderRadius, topLeftCornerRadius = style.borderTopLeftRadius, topRightCornerRadius = style.borderTopRightRadius, bottomLeftCornerRadius = style.borderBottomLeftRadius, bottomRightCornerRadius = style.borderBottomRightRadius;
 
         let corners = Corners.unset;
 
@@ -538,22 +538,22 @@ export class Corners extends Stylable {
             corners = Corners.all(roundedCorner);
         }
 
-        const topLeftCornerRadius = style.borderTopLeftRadius;
-        if (View._propertyIsSet(topLeftCornerRadius) === true) corners.topLeft = new RoundedCorner(topLeftCornerRadius);
-
-        const topRightCornerRadius = style.borderTopRightRadius;
-        if (View._propertyIsSet(topRightCornerRadius) === true) corners.topRight = new RoundedCorner(topRightCornerRadius);
-
-        const bottomLeftCornerRadius = style.borderBottomLeftRadius;
-        if (View._propertyIsSet(bottomLeftCornerRadius) === true) corners.bottomLeft = new RoundedCorner(bottomLeftCornerRadius);
-
-        const bottomRightCornerRadius = style.borderBottomRightRadius;
-        if (View._propertyIsSet(bottomRightCornerRadius) === true) corners.bottomRight = new RoundedCorner(bottomRightCornerRadius);
+        if (View._propertyIsSet(topLeftCornerRadius) === true) { corners.topLeft = new RoundedCorner(topLeftCornerRadius); }
+        if (View._propertyIsSet(topRightCornerRadius) === true) { corners.topRight = new RoundedCorner(topRightCornerRadius); }
+        if (View._propertyIsSet(bottomLeftCornerRadius) === true) { corners.bottomLeft = new RoundedCorner(bottomLeftCornerRadius); }
+        if (View._propertyIsSet(bottomRightCornerRadius) === true) { corners.bottomRight = new RoundedCorner(bottomRightCornerRadius); }
 
         return corners;
     }
+
+    equals(value) {
+        return this.topLeft === value.topLeft && this.topRight === value.topRight && this.bottomLeft === value.bottomLeft && this.bottomRight === value.bottomRight;
+    }
 }
 
+/**
+ * this class is used to represent single corners, it may be used together with Corners
+ */
 export class RoundedCorner {
     constructor(radius) {
         this._radius = radius;
@@ -568,6 +568,9 @@ export class RoundedCorner {
     }
 }
 
+/**
+ * this class is used to represent borders
+ */
 export class Border {
     static get Style() {
         return Object.freeze({
@@ -580,7 +583,7 @@ export class Border {
             groove: "groove",
             ridge: "ridge",
             inset: "inset",
-            outset: "outset"
+            outset: "outset",
         });
     }
 
@@ -619,6 +622,9 @@ export class Border {
     }
 }
 
+/**
+ * this class is used to define two dimensional properties on every side on a box-based elements.
+ */
 export class Inset extends Stylable {
     constructor(top, left, right, bottom) {
         super();
@@ -696,57 +702,50 @@ export class Inset extends Stylable {
     set bottom(value) {
         this._bottom = value;
     }
+
+    equals(value) {
+        return value.left === this.left && value.right === this.right && value.top === this.top && value.bottom === this.bottom;
+    }
 }
 
+/**
+ * used as a wrapper class for css margins
+ */
 export class Margin extends Inset {
     static get zero() {
         return new this("0px", "0px", "0px", "0px");
     }
 
     static fromStyle(style) {
-        const left = style.marginLeft;
-        const right = style.marginRight;
-        const top = style.marginTop;
-        const bottom = style.marginBottom;
-
-        const margin = new Margin(top, left, right, bottom);
-
-        return margin;
+        return new Margin(style.marginTop, style.marginLeft, style.marginRight, style.marginBottom);
     }
 
     toStyle() {
         let style = {
-            marginLeft: "", // Todo hierfür konzept überlegen
+            marginLeft: "",
             marginRight: "",
             marginTop: "",
-            marginBottom: ""
+            marginBottom: "",
         };
 
-        const left = this.left;
-        const right = this.right;
-        const top = this.top;
-        const bottom = this.bottom;
+        const left = this.left, right = this.right, top = this.top, bottom = this.bottom;
 
-        if (left !== undefined) style.marginLeft = left;
-        if (right !== undefined) style.marginRight = right;
-        if (top !== undefined) style.marginTop = top;
-        if (bottom !== undefined) style.marginBottom = bottom;
+        if (left !== undefined) { style.marginLeft = left; }
+        if (right !== undefined) { style.marginRight = right; }
+        if (top !== undefined) { style.marginTop = top; }
+        if (bottom !== undefined) { style.marginBottom = bottom; }
 
         return style;
     }
 }
 
+/**
+ * used as a wrapper class for css paddings
+ */
 export class Padding extends Margin {
-
     static fromStyle(style) {
-        const left = style.paddingLeft;
-        const right = style.paddingRight;
-        const top = style.paddingTop;
-        const bottom = style.paddingBottom;
 
-        const inset = new Padding(top, left, right, bottom);
-
-        return inset;
+        return new Padding(style.paddingTop, style.paddingLeft, style.paddingRight, style.paddingBottom);
     }
 
     toStyle() {
@@ -754,167 +753,203 @@ export class Padding extends Margin {
             paddingLeft: "",
             paddingRight: "",
             paddingTop: "",
-            paddingBottom: ""
-        }
+            paddingBottom: "",
+        };
 
-        const left = this.left;
-        const right = this.right;
-        const top = this.top;
-        const bottom = this.bottom;
+        const left = this.left, right = this.right, top = this.top, bottom = this.bottom;
 
-        if (left !== undefined) style.paddingLeft = left;
-        if (right !== undefined) style.paddingRight = right;
-        if (top !== undefined) style.paddingTop = top;
-        if (bottom !== undefined) style.paddingBottom = bottom;
+        if (left !== undefined) { style.paddingLeft = left; }
+        if (right !== undefined) { style.paddingRight = right; }
+        if (top !== undefined) { style.paddingTop = top; }
+        if (bottom !== undefined) { style.paddingBottom = bottom; }
 
         return style;
     }
 }
 
+/**
+ * used as a wrapper class for css borders
+ */
 export class Borders extends Inset {
     toStyle() {
         let style = {
             borderColor: "",
             borderStyle: "",
             borderWidth: "",
-
-            /*
-            borderLeftColor: "",
-            borderLeftStyle: "",
-            borderLeftWidth: "",
-
-            borderRightColor: "",
-            borderRightStyle: "",
-            borderRightWidth: "",
-
-            borderTopColor: "",
-            borderTopStyle: "",
-            borderTopWidth: "",
-
-            borderBottomColor: "",
-            borderBottomStyle: "",
-            borderBottomWidth: ""
-            */
         };
 
-        const left = this.left;
-        const right = this.right;
-        const top = this.top;
-        const bottom = this.bottom;
+        const left = this.left, right = this.right, top = this.top, bottom = this.bottom;
 
         if (top !== undefined && left === right && right === top && top === bottom) {
-            const borderColor = top.color;
-            const borderStyle = top.style;
-            const borderWidth = top.width;
+            const borderColor = top.color, borderStyle = top.style, borderWidth = top.width;
 
-            if (borderColor !== undefined) style.borderColor = borderColor.toStyleRule();
-            if (borderStyle !== undefined) style.borderStyle = borderStyle;
-            if (borderWidth !== undefined) style.borderWidth = borderWidth;
+            if (borderColor !== undefined) { style.borderColor = borderColor.toStyleRule(); }
+            if (borderStyle !== undefined) { style.borderStyle = borderStyle; }
+            if (borderWidth !== undefined) { style.borderWidth = borderWidth; }
         }
         else {
             if (left !== undefined) {
-                const borderColor = left.color;
-                const borderStyle = left.style;
-                const borderWidth = left.width;
+                const borderColor = left.color, borderStyle = left.style, borderWidth = left.width;
 
-                if (borderColor !== undefined) style.borderLeftColor = borderColor.toStyleRule();
-                if (borderStyle !== undefined) style.borderLeftStyle = borderStyle;
-                if (borderWidth !== undefined) style.borderLeftWidth = borderWidth;
+                if (borderColor !== undefined) { style.borderLeftColor = borderColor.toStyleRule(); }
+                if (borderStyle !== undefined) { style.borderLeftStyle = borderStyle; }
+                if (borderWidth !== undefined) { style.borderLeftWidth = borderWidth; }
             }
             if (right !== undefined) {
-                const borderColor = right.color;
-                const borderStyle = right.style;
-                const borderWidth = right.width;
+                const borderColor = right.color, borderStyle = right.style, borderWidth = right.width;
 
-                if (borderColor !== undefined) style.borderRightColor = borderColor.toStyleRule();
-                if (borderStyle !== undefined) style.borderRightStyle = borderStyle;
-                if (borderWidth !== undefined) style.borderRightWidth = borderWidth;
+                if (borderColor !== undefined) { style.borderRightColor = borderColor.toStyleRule(); }
+                if (borderStyle !== undefined) { style.borderRightStyle = borderStyle; }
+                if (borderWidth !== undefined) { style.borderRightWidth = borderWidth; }
             }
             if (top !== undefined) {
-                const borderColor = top.color;
-                const borderStyle = top.style;
-                const borderWidth = top.width;
+                const borderColor = top.color, borderStyle = top.style, borderWidth = top.width;
 
-                if (borderColor !== undefined) style.borderTopColor = borderColor.toStyleRule();
-                if (borderStyle !== undefined) style.borderTopStyle = borderStyle;
-                if (borderWidth !== undefined) style.borderTopWidth = borderWidth;
+                if (borderColor !== undefined) { style.borderTopColor = borderColor.toStyleRule(); }
+                if (borderStyle !== undefined) { style.borderTopStyle = borderStyle; }
+                if (borderWidth !== undefined) { style.borderTopWidth = borderWidth; }
             }
             if (bottom !== undefined) {
-                const borderColor = bottom.color;
-                const borderStyle = bottom.style;
-                const borderWidth = bottom.width;
+                const borderColor = bottom.color, borderStyle = bottom.style, borderWidth = bottom.width;
 
-                if (borderColor !== undefined) style.borderBottomColor = borderColor.toStyleRule();
-                if (borderStyle !== undefined) style.borderBottomStyle = borderStyle;
-                if (borderWidth !== undefined) style.borderBottomWidth = borderWidth;
+                if (borderColor !== undefined) { style.borderBottomColor = borderColor.toStyleRule(); }
+                if (borderStyle !== undefined) { style.borderBottomStyle = borderStyle; }
+                if (borderWidth !== undefined) { style.borderBottomWidth = borderWidth; }
             }
         }
 
         return style;
     }
 
-    static _deriveBorder(color, width, style) { // Todo stattdessen vielleicht (static) Border.fromStyle?
-        let borderColor;
-        let borderWidth;
-        let borderStyle;
+    /**
+     * this method is used to derive an instance of Border for given css properties if possible
+     * @param {string} color a css color string
+     * @param {string} width a css unit
+     * @param {string} style a css unit
+     * @returns instance of Border or undefined
+     */
+    static _deriveBorder(color, width, style) {
+        let borderColor, borderWidth, borderStyle;
 
-        if (View._propertyIsSet(color) === true) borderColor = Color.fromStyleRule(color);
-        if (View._propertyIsSet(width) === true) borderWidth = width;
-        if (View._propertyIsSet(style) === true) borderStyle = style;
+        if (View._propertyIsSet(color) === true) { borderColor = Color.fromStyleRule(color); }
+        if (View._propertyIsSet(width) === true) { borderWidth = width; }
+        if (View._propertyIsSet(style) === true) { borderStyle = style; }
 
-        if (borderColor !== undefined || borderWidth !== undefined || borderStyle !== undefined) return new Border(borderColor, borderWidth, borderStyle);
+        if (borderColor !== undefined || borderWidth !== undefined || borderStyle !== undefined) { return new Border(borderColor, borderWidth, borderStyle); }
+        return undefined;
     }
 
     static fromStyle(style) {
 
-        const borderColor = style.borderColor;
-        const borderWidth = style.borderWidth;
-        const borderStyle = style.borderStyle;
+        const borderColor = style.borderColor, borderWidth = style.borderWidth, borderStyle = style.borderStyle, commonBorder = Borders._deriveBorder(borderColor, borderWidth, borderStyle);
 
-        let borders = Borders.unset;
+        let borders = Borders.unset, leftBorder, rightBorder, topBorder, bottomBorder;
 
-        const commonBorder = Borders._deriveBorder(borderColor, borderWidth, borderStyle);
-        if (commonBorder !== undefined) borders = Borders.all(commonBorder);
+        if (commonBorder !== undefined) { borders = Borders.all(commonBorder); }
 
-        const leftColor = style.borderLeftColor;
-        const leftWidth = style.borderLeftWidth;
-        const leftStyle = style.borderLeftStyle;
+        leftBorder = Borders._deriveBorder(style.borderLeftColor, style.borderLeftWidth, style.borderLeftStyle);
+        if (leftBorder !== undefined) { borders.left = leftBorder; }
 
-        const leftBorder = Borders._deriveBorder(leftColor, leftWidth, leftStyle);
-        if (leftBorder !== undefined) borders.left = leftBorder;
+        rightBorder = Borders._deriveBorder(style.borderRightColor, style.borderRightWidth, style.borderRightStyle);
+        if (rightBorder !== undefined) { borders.right = rightBorder; }
 
-        const rightColor = style.borderRightColor;
-        const rightWidth = style.borderRightWidth;
-        const rightStyle = style.borderRightStyle;
+        topBorder = Borders._deriveBorder(style.borderTopColor, style.borderTopWidth, style.borderTopStyle);
+        if (topBorder !== undefined) { borders.top = topBorder; }
 
-        const rightBorder = Borders._deriveBorder(rightColor, rightWidth, rightStyle);
-        if (rightBorder !== undefined) borders.right = rightBorder;
-
-        const topColor = style.borderTopColor;
-        const topWidth = style.borderTopWidth;
-        const topStyle = style.borderTopStyle;
-
-        const topBorder = Borders._deriveBorder(topColor, topWidth, topStyle);
-        if (topBorder !== undefined) borders.top = topBorder;
-
-        const bottomColor = style.borderBottomColor;
-        const bottomWidth = style.borderBottomWidth;
-        const bottomStyle = style.borderBottomStyle;
-
-        const bottomBorder = Borders._deriveBorder(bottomColor, bottomWidth, bottomStyle);
-        if (bottomBorder !== undefined) borders.bottom = bottomBorder;
+        bottomBorder = Borders._deriveBorder(style.borderBottomColor, style.borderBottomWidth, style.borderBottomStyle);
+        if (bottomBorder !== undefined) { borders.bottom = bottomBorder; }
 
         return borders;
     }
 }
 
+/**
+ * this class is the base class for all displayable ui elements that use a base dom-root.
+ */
 export class View extends Observable {
+
+    /**
+     * this constant is used to represent pointer events 
+     */
+    static get PointerEvents() {
+        return Object.freeze({
+            auto: "auto",
+            none: "none",
+        });
+    }
+
+    /**
+     * this constant is used to represent css positions
+     */
+    static get Position() {
+        return Object.freeze({
+            static: "static",
+            relative: "relative",
+            absolute: "absolute",
+            sticky: "sticky",
+            fixed: "fixed",
+        });
+    }
+
+    /**
+     * this constant is used to represent css overflow rules
+     */
+    static get Overflow() {
+        return Object.freeze({
+            visible: "visible",
+            hidden: "hidden",
+            scroll: "scroll",
+            automatic: "auto",
+        });
+    }
+
     constructor() {
         super();
 
         this._createNode();
 
         this._views = [];
+    }
+
+    /**
+     * these setters/getters below are used to expose access to ui properties act as proxy to manipulate the DOM-Node
+     */
+    get node() {
+        return this._node;
+    }
+
+    get parentView() {
+        return this._parentView;
+    }
+
+    get isDisabled() {
+        return this.node.disabled;
+    }
+
+    set isDisabled(value) {
+        this.node.disabled = value;
+
+        this.views.forEach(view => view.isDisabled = value);
+    }
+
+    get innerHTML() {
+        return this.node.innerHTML;
+    }
+
+    set innerHTML(value) {
+        this.node.innerHTML = value;
+    }
+
+    set parentView(value) {
+        this._parentView = value;
+    }
+
+    set pointerEvents(value) {
+        this.node.style.pointerEvents = value;
+    }
+
+    get pointerEvents() {
+        return this.node.style.pointerEvents;
     }
 
     static get display() {
@@ -949,128 +984,9 @@ export class View extends Observable {
         this.node.id = value;
     }
 
-    addViewBefore(view, nextView) {
-        this._prepareView(view);
-
-        if (nextView === undefined) throw new Error("Cannot insert a view before another view without a reference view");
-
-        this.node.insertBefore(view.node, nextView.node);
-    }
-
-    addView(view) {
-        this._prepareView(view);
-
-        this.node.appendChild(view.node);
-    }
-
-    _prepareView(view) {
-        if (view.parentView !== undefined) throw new Error("Cannot add view to more than one parent view");
-
-        this.views.push(view);
-
-        view.parentView = this;
-    }
-
-    removeView(view) {
-        const views = this.views;
-        const index = views.indexOf(view);
-
-        if (index >= 0) views.splice(index, 1);
-        this.node.removeChild(view.node);
-        view.parentView = undefined;
-
-        return view;
-    }
-
-    removeFromParentView() {
-        const parentView = this.parentView;
-
-        if (parentView === undefined) return;
-
-        parentView.removeView(this);
-
-        return parentView;
-    }
-
-    removeViews() {
-        const views = this.views;
-        views.splice(0, views.length).forEach(view => this.removeView(view));
-    }
-
-    _createNode() {
-        const node = document.createElement(this.constructor.tag);
-        node.style.display = this.constructor.display;
-
-        this._node = node;
-
-        return node;
-    }
-
-    get node() {
-        return this._node;
-    }
-
-    get parentView() {
-        return this._parentView;
-    }
-
-    get isDisabled() {
-        return this.node.disabled;
-    }
-
-    set isDisabled(value) {
-        this.node.disabled = value;
-
-        this.views.forEach(view => view.isDisabled = value);
-    }
-
-    set parentView(value) {
-        this._parentView = value;
-    }
-
-    static get Position() {
-        return Object.freeze({
-            static: "static",
-            relative: "relative",
-            absolute: "absolute",
-            sticky: "sticky",
-            fixed: "fixed"
-        });
-    }
-
-    static get Overflow() {
-        return Object.freeze({
-            visible: "visible",
-            hidden: "hidden",
-            scroll: "scroll",
-            automatic: "auto"
-        });
-    }
-
-    static _propertyIsSet(value) {
-        return value !== undefined && value !== "" && value !== "unset";
-    }
-
-    static _deriveConstrains(str) {
-        const regex = new RegExp("[+-]?\\d+(?:\\.\\d+)?(?:%|vmax|vmin|vh|vw|rem|ch|ex|em|cm|mm|in|px|pt|pc)", "g");
-
-        const match = str.match(regex);
-
-        if (match === null) throw new Error("Unable to parse constraints");
-
-        return match;
-    }
-
-    addDOMEventListener(type, listener) {
-        this.node.addEventListener(type, listener); // TODO da noch false am ende?
-    }
-
     get overflow() {
-        const overflow = this.node.style.overflow;
-        const values = Object.values(View.Overflow);
-
-        const value = values.find(value => value === overflow);
-        if (value === undefined) throw new Error(`Unsupported overflow: ${overflow}`);
+        const overflow = this.node.style.overflow, values = Object.values(View.Overflow), value = values.find(value => value === overflow);
+        if (value === undefined) { throw new Error(`Unsupported overflow: ${overflow}`); }
 
         return value;
     }
@@ -1080,11 +996,8 @@ export class View extends Observable {
     }
 
     get position() {
-        const position = this.node.style.position;
-        const values = Object.values(View.Position);
-
-        const value = values.find(value => value === position);
-        if (value === undefined) throw new Error(`Unsupported position: ${position}`);
+        const position = this.node.style.position, values = Object.values(View.Position), value = values.find(value => value === position);
+        if (value === undefined) { throw new Error(`Unsupported position: ${position}`); }
 
         return value;
     }
@@ -1188,7 +1101,7 @@ export class View extends Observable {
     }
 
     set margin(value) {
-        if (value === undefined) return;
+        if (value === undefined) { return; }
 
         Object.assign(this.node.style, value.toStyle());
     }
@@ -1200,7 +1113,7 @@ export class View extends Observable {
     }
 
     set padding(value) {
-        if (value === undefined) return;
+        if (value === undefined) { return; }
 
         Object.assign(this.node.style, value.toStyle());
     }
@@ -1232,7 +1145,8 @@ export class View extends Observable {
     get backgroundColor() {
         const backgroundColor = this.node.style.backgroundColor;
 
-        if (View._propertyIsSet(backgroundColor) === true) return Color.fromStyleRule(backgroundColor);
+        if (View._propertyIsSet(backgroundColor) === true) { return Color.fromStyleRule(backgroundColor); }
+        return undefined;
     }
 
     set backgroundColor(value) {
@@ -1258,7 +1172,8 @@ export class View extends Observable {
     get color() {
         const color = this.node.style.color;
 
-        if (View._propertyIsSet(color) === true) return Color.fromStyleRule(color);
+        if (View._propertyIsSet(color) === true) { return Color.fromStyleRule(color); }
+        return undefined;
     }
 
     set color(value) {
@@ -1268,7 +1183,7 @@ export class View extends Observable {
     }
 
     set borders(value) {
-        if (value === undefined) return;
+        if (value === undefined) { return; }
 
         Object.assign(this.node.style, value.toStyle());
     }
@@ -1286,7 +1201,7 @@ export class View extends Observable {
     }
 
     set corners(value) {
-        if (value === undefined) return;
+        if (value === undefined) { return; }
 
         Object.assign(this.node.style, value.toStyle());
     }
@@ -1298,7 +1213,7 @@ export class View extends Observable {
     }
 
     set shadow(value) {
-        if (value === undefined) return; // Todo review
+        if (value === undefined) { return; }
         const node = this.node;
 
         node.style.boxShadow = value.toStyleRule();
@@ -1311,7 +1226,7 @@ export class View extends Observable {
     }
 
     set filter(value) {
-        if (value === undefined) return;
+        if (value === undefined) { return; }
 
         Object.assign(this.node.style, value.toStyle());
     }
@@ -1323,12 +1238,134 @@ export class View extends Observable {
     }
 
     set gridInset(value) {
-        if (value === undefined) return;
+        if (value === undefined) { return; }
 
         Object.assign(this.node.style, value.toStyle());
     }
+
+    get htmlText() {
+        return this.node.outerHTML;
+    }
+
+    /**
+     * this method is used to insert a new view before another view
+     * @param {View} view the view to be inserted
+     * @param {View} nextView the reference view
+     */
+    addViewBefore(view, nextView) {
+        this._prepareView(view);
+
+        if (nextView === undefined) { throw new Error("Cannot insert a view before another view without a reference view"); }
+
+        this.node.insertBefore(view.node, nextView.node);
+    }
+
+    /**
+     * this method is used to insert a new view
+     * @param {View} view 
+     */
+    addView(view) {
+        this._prepareView(view);
+
+        this.node.appendChild(view.node);
+    }
+
+    /**
+     * this method inserts a new view into the data structure if eligible
+     * @param {View} view 
+     */
+    _prepareView(view) {
+        if (view.parentView !== undefined) { throw new Error("Cannot add view to more than one parent view"); }
+
+        this.views.push(view);
+
+        view.parentView = this;
+    }
+
+    /**
+     * this method is used to remove a view if possible
+     * @param {View} view 
+     * @returns the removed view
+     */
+    removeView(view) {
+        const views = this.views, index = views.indexOf(view);
+
+        if (index >= 0) { views.splice(index, 1); }
+        this.node.removeChild(view.node);
+        view.parentView = undefined;
+
+        return view;
+    }
+
+    /**
+     * this method is used to remove a view from its parent view
+     * @returns the parentView (or undefined)
+     */
+    removeFromParentView() {
+        const parentView = this.parentView;
+
+        if (parentView === undefined) { return undefined; }
+
+        parentView.removeView(this);
+
+        return parentView;
+    }
+
+    /**
+     * this method removes all child views
+     */
+    removeViews() {
+        const views = this.views;
+        views.splice(0, views.length).forEach(view => this.removeView(view));
+    }
+
+    /**
+     * this method is used to create a DOM-node for the view 
+     */
+    _createNode() {
+        const node = document.createElement(this.constructor.tag);
+        node.style.display = this.constructor.display;
+
+        this._node = node;
+
+        return node;
+    }
+
+    /**
+     * this method is used to determine wether a property is set as css rule or not
+     * @param {string} value a css rule
+     * @returns 
+     */
+    static _propertyIsSet(value) {
+        return value !== undefined && value !== "" && value !== "unset";
+    }
+
+    /**
+     * this method is used recover css rules from a string
+     * @param {string} str the css rule to be parsed
+     * @returns 
+     */
+    static _deriveConstrains(str) {
+        const regex = new RegExp("[+-]?\\d+(?:\\.\\d+)?(?:%|vmax|vmin|vh|vw|rem|ch|ex|em|cm|mm|in|px|pt|pc)", "g"), match = str.match(regex);
+
+        if (match === null) { throw new Error("Unable to parse constraints"); }
+
+        return match;
+    }
+
+    /**
+     * this method is used to add a dom listener to the internal node
+     * @param {string} type 
+     * @param {object} listener 
+     */
+    addDOMEventListener(type, listener) {
+        this.node.addEventListener(type, listener);
+    }
 }
 
+/**
+ * this method is a css wrapper for gaussian blur filters
+ */
 export class GaussianBlurFilter extends Stylable {
     constructor(radius) {
         super();
@@ -1345,15 +1382,12 @@ export class GaussianBlurFilter extends Stylable {
     }
 
     static fromStyle(style) {
-        const filter = style.filter;
-        if (View._propertyIsSet(filter) === false || filter.includes("blur") === false) return;
+        if (View._propertyIsSet(this.filter) === false || this.filter.includes("blur") === false) { return undefined; }
 
-        const constraints = View._deriveConstrains(filter);
-        if (constraints.left !== 1) throw new Error(`Cannot derive gaussian blur from rule ${filter}`);
+        const filter = style.filter, constraints = View._deriveConstrains(filter);
+        if (constraints.left !== 1) { throw new Error(`Cannot derive gaussian blur from rule ${filter}`); }
 
-        const radius = constraints[0];
-
-        return new GaussianBlurFilter(radius);
+        return new GaussianBlurFilter(constraints[0]);
     }
 
     toStyle() {
@@ -1363,48 +1397,46 @@ export class GaussianBlurFilter extends Stylable {
 
         return style;
     }
+
+    equals(value) {
+        return this.radius === value.radius;
+    }
 }
 
+/**
+ * this is a css rule wrapper to represent the layout of a view inside a grid
+ */
 export class GridInset extends Inset {
-    static fromStyle(style) { // Todo des direkt in view auslagern, nicht in inset (davor evaluieren, ob sinvoll)
-        const left = style.gridColumnStart;
-        const right = style.gridColumnEnd;
-        const top = style.gridRowStart;
-        const bottom = style.gridRowEnd;
-
-        const margin = new GridInset(top, left, right, bottom);
-
-        return margin;
+    static fromStyle(style) {
+        return new GridInset(style.gridRowStart, style.gridColumnStart, style.gridColumnEnd, style.gridRowEnd);
     }
 
     toStyle() {
         let style = {
-            gridColumnStart: "", // Todo hierfür konzept überlegen
+            gridColumnStart: "",
             gridColumnEnd: "",
             gridRowStart: "",
-            gridRowEnd: ""
+            gridRowEnd: "",
         };
 
-        const left = this.left;
-        const right = this.right;
-        const top = this.top;
-        const bottom = this.bottom;
+        const left = this.left, right = this.right, top = this.top, bottom = this.bottom;
 
-        if (left !== undefined) style.gridColumnStart = left;
-        if (right !== undefined) style.gridColumnEnd = right;
-        if (top !== undefined) style.gridRowStart = top;
-        if (bottom !== undefined) style.gridRowEnd = bottom;
+        if (left !== undefined) { style.gridColumnStart = left; }
+        if (right !== undefined) { style.gridColumnEnd = right; }
+        if (top !== undefined) { style.gridRowStart = top; }
+        if (bottom !== undefined) { style.gridRowEnd = bottom; }
 
         return style;
     }
 }
 
+/**
+ * this class is a css wrapper to represent gaps
+ */
 export class Gap {
     constructor(horizontal, vertical) {
         this._horizontal = horizontal;
         this._vertical = vertical;
-
-        // Todo oder hier einfach object.freeze(this), dann Inset und alle Unterklassen analog, oder observable und dann parent notifien und wert neu setzen
     }
 
     static all(value) {
@@ -1436,6 +1468,9 @@ export class Gap {
     }
 }
 
+/**
+ * this is a wrapper class for a css Grid based view
+ */
 export class Grid extends View {
 
     static get display() {
@@ -1449,10 +1484,7 @@ export class Grid extends View {
     get gap() {
         const node = this.node;
 
-        const vertical = node.style.gridColumnGap;
-        const horizontal = node.style.gridRowGap;
-
-        return new Gap(horizontal, vertical);
+        return new Gap(node.style.gridRowGap, node.style.gridColumnGap);
     }
 
     set gap(value) {
@@ -1479,30 +1511,44 @@ export class Grid extends View {
     }
 }
 
+/**
+ * this class is used to create a view container that forces its child views to an intrinsic layout alongside one axis
+ */
 export class StackView extends View {
-
+    /**
+     * this constant is used to represent layout axes
+     */
     static get Axis() {
         return Object.freeze({
             vertical: "column",
-            horizontal: "row"
+            horizontal: "row",
         });
     }
 
+    /**
+     * this constant is used to define layout directions
+     */
     static get Direction() {
         return Object.freeze({
             default: "",
-            reversed: "-reverse"
+            reversed: "-reverse",
         });
     }
 
+    /**
+     * this constant is used to define layout wrap modes
+     */
     static get Wrap() {
         return Object.freeze({
             none: "nowrap",
             wrap: "wrap",
-            reversed: "wrap-reverse"
+            reversed: "wrap-reverse",
         });
     }
 
+    /**
+     * this constant is used to define possible main axis alignments
+     */
     static get MainAxisAlignment() {
         return Object.freeze({
             flexStart: "flex-start",
@@ -1514,10 +1560,13 @@ export class StackView extends View {
             spaceAround: "space-around",
             spaceEvenly: "space-evenly",
             left: "left",
-            right: "right"
+            right: "right",
         });
     }
 
+    /**
+     * this constant is used to define possible cross axis alignments
+     */
     static get CrossAxisAlignment() {
         return Object.freeze({
             stretch: "stretch",
@@ -1530,13 +1579,16 @@ export class StackView extends View {
             start: "start",
             end: "end",
             selfStart: "self-start",
-            selfEnd: "self-end"
+            selfEnd: "self-end",
         });
     }
 
+    /**
+     * this constant is used to define possible wrap cross axis alignments
+     */
     static get WrapCrossAxisAlignment() {
         return Object.freeze({
-            default: "unset", // oder unset oder ""?? TODO
+            default: "unset",
             flexStart: "flex-start",
             flexEnd: "flex-end",
             center: "center",
@@ -1548,10 +1600,13 @@ export class StackView extends View {
             end: "end",
             baseline: "baseline",
             firstBaseline: "first baseline",
-            lastBaseline: "last baseline"
+            lastBaseline: "last baseline",
         });
     }
 
+    /**
+     * this constant is used to define or override the cross axis alignment of the view itself
+     */
     static get CrossAxisSelfAlignment() {
         return Object.freeze({
             auto: "auto",
@@ -1559,7 +1614,7 @@ export class StackView extends View {
             flexEnd: "flex-end",
             center: "center",
             baseline: "baseline",
-            stretch: "stretch"
+            stretch: "stretch",
         });
     }
 
@@ -1575,6 +1630,9 @@ export class StackView extends View {
         this.gap = gap;
     }
 
+    /**
+     * these getters/setters are used to manage access to css properties of the node
+     */
     get order() {
         return this.node.style.order;
     }
@@ -1585,7 +1643,7 @@ export class StackView extends View {
 
     get axis() {
         const vertical = StackView.Axis.vertical;
-        if (this.node.style.flexDirection.startsWith(vertical) === true) return vertical;
+        if (this.node.style.flexDirection.startsWith(vertical) === true) { return vertical; }
 
         return StackView.Axis.horizontal;
     }
@@ -1596,21 +1654,20 @@ export class StackView extends View {
 
     get direction() {
         const reverse = StackView.Direction.reversed;
-        if (this.node.style.flexDirection.endsWith(reverse) === true) return reverse;
+        if (this.node.style.flexDirection.endsWith(reverse) === true) { return reverse; }
 
         return StackView.Direction.default;
     }
 
     set direction(value) {
-        const node = this.node;
-        const reverse = StackView.Direction.reversed;
+        const node = this.node, reverse = StackView.Direction.reversed;
 
         switch (value) {
             case StackView.Direction.default:
                 node.style.flexDirection = node.style.flexDirection.replace(reverse, "");
                 break;
             case reverse:
-                if (this.direction !== value) node.style.flexDirection += reverse;
+                if (this.direction !== value) { node.style.flexDirection += reverse; }
                 break;
             default:
                 throw new Error(`Unsupported direction ${value}`);
@@ -1618,11 +1675,8 @@ export class StackView extends View {
     }
 
     get wrap() {
-        const wrap = this.node.style.flexWrap;
-        const values = Object.values(StackView.Wrap);
-
-        const value = values.find(value => value === wrap);
-        if (value === undefined) throw new Error(`Unsupported wrap: ${wrap}`);
+        const wrap = this.node.style.flexWrap, values = Object.values(StackView.Wrap), value = values.find(value => value === wrap);
+        if (value === undefined) { throw new Error(`Unsupported wrap: ${wrap}`); }
 
         return value;
     }
@@ -1632,11 +1686,8 @@ export class StackView extends View {
     }
 
     get mainAxisAlignment() {
-        const alignment = this.node.style.justifyContent;
-        const values = Object.values(StackView.MainAxisAlignment);
-
-        const value = values.find(value => value === alignment);
-        if (value === undefined) throw new Error(`Unsupported main axis alignment: ${alignment}`);
+        const alignment = this.node.style.justifyContent, values = Object.values(StackView.MainAxisAlignment), value = values.find(value => value === alignment);
+        if (value === undefined) { throw new Error(`Unsupported main axis alignment: ${alignment}`); }
 
         return value;
     }
@@ -1646,11 +1697,8 @@ export class StackView extends View {
     }
 
     get crossAxisAlignment() {
-        const alignment = this.node.style.alignItems;
-        const values = Object.values(StackView.CrossAxisAlignment);
-
-        const value = values.find(value => value === alignment);
-        if (value === undefined) throw new Error(`Unsupported cross axis alignment: ${alignment}`);
+        const alignment = this.node.style.alignItems, values = Object.values(StackView.CrossAxisAlignment), value = values.find(value => value === alignment);
+        if (value === undefined) { throw new Error(`Unsupported cross axis alignment: ${alignment}`); }
 
         return value;
     }
@@ -1660,11 +1708,8 @@ export class StackView extends View {
     }
 
     get wrapCrossAxisAlignment() {
-        const alignment = this.node.style.alignContent;
-        const values = Object.values(StackView.WrapCrossAxisAlignment);
-
-        const value = values.find(value => value === alignment);
-        if (value === undefined) throw new Error(`Unsupported wrap cross axis alignment: ${alignment}`);
+        const alignment = this.node.style.alignContent, values = Object.values(StackView.WrapCrossAxisAlignment), value = values.find(value => value === alignment);
+        if (value === undefined) { throw new Error(`Unsupported wrap cross axis alignment: ${alignment}`); }
 
         return value;
     }
@@ -1674,11 +1719,8 @@ export class StackView extends View {
     }
 
     get crossAxisSelfAlignment() {
-        const alignment = this.node.style.alignSelf;
-        const values = Object.values(StackView.CrossAxisSelfAlignment);
-
-        const value = values.find(value => value === alignment);
-        if (value === undefined) throw new Error(`Unsupported cross self axis alignment: ${alignment}`);
+        const alignment = this.node.style.alignSelf, values = Object.values(StackView.CrossAxisSelfAlignment), value = values.find(value => value === alignment);
+        if (value === undefined) { throw new Error(`Unsupported cross self axis alignment: ${alignment}`); }
 
         return value;
     }
@@ -1690,10 +1732,7 @@ export class StackView extends View {
     get gap() {
         const node = this.node;
 
-        const vertical = node.style.columnGap;
-        const horizontal = node.style.rowGap;
-
-        return new Gap(horizontal, vertical);
+        return new Gap(node.style.rowGap, node.style.columnGap);
     }
 
     set gap(value) {
@@ -1708,10 +1747,13 @@ export class StackView extends View {
     }
 
     static get tag() {
-        return "span"; // Todo oder block?
+        return "span";
     }
 }
 
+/**
+ * this is a wrapper class for a label that uses a span tag
+ */
 export class Label extends View {
 
     static get WhiteSpace() {
@@ -1721,7 +1763,7 @@ export class Label extends View {
             pre: "pre",
             preWrap: "pre-wrap",
             preLine: "pre-line",
-            breakSpaces: "break-spaces"
+            breakSpaces: "break-spaces",
         });
     }
 
@@ -1739,7 +1781,7 @@ export class Label extends View {
             "600": "600",
             "700": "700",
             "800": "800",
-            "900": "900"
+            "900": "900",
         });
     }
 
@@ -1761,7 +1803,14 @@ export class Label extends View {
             monospace: "monospace",
             cursive: "cursive",
             fantasy: "fantasy",
-            inherit: "inherit"
+            inherit: "inherit",
+        });
+    }
+
+    static get TextOverflow() {
+        return Object.freeze({
+            ellipsis: "ellipsis",
+            clip: "clip",
         });
     }
 
@@ -1788,19 +1837,11 @@ export class Label extends View {
     }
 
     get fontSize() {
-        const node = this.node;
-
-        const fontSize = node.style.fontSize;
-
-        return fontSize;
+        return this.node.style.fontSize;
     }
 
     set fontSize(value) {
-        const node = this.node;
-
-        const fontSize = value;
-
-        node.style.fontSize = fontSize;
+        this.node.style.fontSize = value;
     }
 
     get fontFamily() {
@@ -1820,11 +1861,8 @@ export class Label extends View {
     }
 
     get whiteSpace() {
-        const whiteSpace = this.node.style.whiteSpace;
-        const values = Object.values(Label.WhiteSpace);
-
-        const value = values.find(value => value === whiteSpace);
-        if (value === undefined) throw new Error(`Unsupported whiteSpace: ${whiteSpace}`);
+        const whiteSpace = this.node.style.whiteSpace, values = Object.values(Label.WhiteSpace), value = values.find(value => value === whiteSpace);
+        if (value === undefined) { throw new Error(`Unsupported whiteSpace: ${whiteSpace}`); }
 
         return value;
     }
@@ -1833,12 +1871,20 @@ export class Label extends View {
         this.node.style.whiteSpace = value;
     }
 
-    get fontWeight() {
-        const fontWeight = this.node.style.fontWeight;
-        const values = Object.values(Label.FontWeight);
+    get textOverflow() {
+        const textOverflow = this.node.style.textOverflow, values = Object.values(Label.TextOverflow), value = values.find(value => value === textOverflow);
+        if (value === undefined) { throw new Error(`Unsupported textOverflow: ${textOverflow}`); }
 
-        const value = values.find(value => value === fontWeight);
-        if (value === undefined) throw new Error(`Unsupported fontWeight: ${fontWeight}`);
+        return value;
+    }
+
+    set textOverflow(value) {
+        this.node.style.textOverflow = value;
+    }
+
+    get fontWeight() {
+        const fontWeight = this.node.style.fontWeight, values = Object.values(Label.FontWeight), value = values.find(value => value === fontWeight);
+        if (value === undefined) { throw new Error(`Unsupported fontWeight: ${fontWeight}`); }
 
         return value;
     }
@@ -1848,11 +1894,8 @@ export class Label extends View {
     }
 
     get textAlignment() {
-        const textAlignment = this.node.style.textAlign;
-        const values = Object.values(Label.TextAlignment);
-
-        const value = values.find(value => value === textAlignment);
-        if (value === undefined) throw new Error(`Unsupported textAlignment: ${textAlignment}`);
+        const textAlignment = this.node.style.textAlign, values = Object.values(Label.TextAlignment), value = values.find(value => value === textAlignment);
+        if (value === undefined) { throw new Error(`Unsupported textAlignment: ${textAlignment}`); }
 
         return value;
     }
@@ -1868,7 +1911,7 @@ export class Label extends View {
     }
 
     set textShadow(value) {
-        if (value === undefined) return;
+        if (value === undefined) { return; }
 
         this.node.style.textShadow = value.toStyleRule();
     }
@@ -1878,17 +1921,52 @@ export class Label extends View {
     }
 }
 
+/**
+ * this class is a wrapper for icon views
+ */
 export class Icon extends Label {
     static get tag() {
         return "i";
     }
-
-    set pointerEvents(value){
-        this.node.style.pointerEvents = value;
-    }
 }
 
+/**
+ * this class resembles a text field using the html input tag
+ */
 export class TextField extends Label {
+
+    /**
+     * this constant is used to define text input types
+     */
+    static get TextInputType() {
+        return Object.freeze({
+            text: "text",
+            password: "password",
+            email: "email",
+            search: "search",
+            telephone: "tel",
+            url: "url",
+        });
+    }
+
+    /**
+     * event labels
+     */
+    static get TEXT_FIELD_CHANGE_NOTIFICATION_TYPE() {
+        return "change";
+    }
+
+    static get TEXT_FIELD_KEYPRESS_NOTIFICATION_TYPE() {
+        return "keypress";
+    }
+
+    static get TEXT_FIELD_PASTE_NOTIFICATION_TYPE() {
+        return "paste";
+    }
+
+    static get TEXT_FIELD_INPUT_NOTIFICATION_TYPE() {
+        return "input";
+    }
 
     constructor(text, onChange) {
         super(text);
@@ -1898,6 +1976,9 @@ export class TextField extends Label {
         this._addListeners();
     }
 
+    /**
+     * the setters/getters below expose access to to callback functions
+     */
     get onChange() {
         return this._onChange;
     }
@@ -1930,39 +2011,32 @@ export class TextField extends Label {
         this._onInput = value;
     }
 
-    static get TEXT_FIELD_CHANGE_NOTIFICATION_TYPE() {
-        return "change";
+     /**
+     * the getters/setters below are expose ui elements and their properties
+     */
+    get isRequired() {
+        return this.node.required;
     }
 
-    static get TEXT_FIELD_KEYPRESS_NOTIFICATION_TYPE() {
-        return "keypress";
+    set isRequired(value) {
+        this.node.required = value;
     }
 
-    static get TEXT_FIELD_PASTE_NOTIFICATION_TYPE() {
-        return "paste";
+    get isValid() {
+        return this.node.checkValidity();
     }
 
-    static get TEXT_FIELD_INPUT_NOTIFICATION_TYPE() {
-        return "input";
+    set validationMessage(value) {
+        this.node.setCustomValidity(value);
     }
 
-    static get TextInputType() {
-        return Object.freeze({
-            text: "text",
-            password: "password",
-            email: "email",
-            search: "search",
-            telephone: "tel",
-            url: "url"
-        });
+    get validationMessage() {
+        return this.node.validationMessage;
     }
 
     get textInputType() {
-        const textInputType = this.node.type;
-        const values = Object.values(TextField.TextInputType);
-
-        const value = values.find(value => value === textInputType);
-        if (value === undefined) throw new Error(`Unsupported textInputType: ${textInputType}`);
+        const textInputType = this.node.type, values = Object.values(TextField.TextInputType), value = values.find(value => value === textInputType);
+        if (value === undefined) { throw new Error(`Unsupported textInputType: ${textInputType}`); }
 
         return value;
     }
@@ -1995,55 +2069,6 @@ export class TextField extends Label {
         return document.activeElement === this.node;
     }
 
-    focus() {
-        this.node.focus();
-    }
-
-    clear() {
-        this.text = "";
-    }
-
-    _onChangeWrapper() {
-        const onChange = this.onChange;
-        if (onChange !== undefined) onChange();
-
-        const event = new Event(TextField.TEXT_FIELD_CHANGE_NOTIFICATION_TYPE, this);
-        this.notifyAll(event);
-    }
-
-    _onKeyPressWrapper() {
-        const onKeyPress = this.onKeyPress;
-        if (onKeyPress !== undefined) onKeyPress();
-
-        const event = new Event(TextField.TEXT_FIELD_KEYPRESS_NOTIFICATION_TYPE, this);
-        this.notifyAll(event);
-    }
-
-    _onPasteWrapper() {
-        const onPaste = this.onPaste;
-        if (onPaste !== undefined) onPaste();
-
-        const event = new Event(TextField.TEXT_FIELD_PASTE_NOTIFICATION_TYPE, this);
-        this.notifyAll(event);
-    }
-
-    _onInputWrapper() {
-        const onInput = this.onInput;
-        if (onInput !== undefined) onInput();
-
-        const event = new Event(TextField.TEXT_FIELD_INPUT_NOTIFICATION_TYPE, this);
-        this.notifyAll(event);
-    }
-
-    _addListeners() {
-        const node = this.node;
-
-        node.addEventListener(TextField.TEXT_FIELD_CHANGE_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true); // Todo des noch ändern
-        node.addEventListener(TextField.TEXT_FIELD_KEYPRESS_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true); // Todo des noch ändern
-        node.addEventListener(TextField.TEXT_FIELD_PASTE_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true); // Todo des noch ändern
-        node.addEventListener(TextField.TEXT_FIELD_INPUT_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true); // Todo des noch ändern
-    }
-
     get readOnly() {
         return this.node.readonly;
     }
@@ -2053,19 +2078,19 @@ export class TextField extends Label {
     }
 
     get minLength() {
-        return this.node.minlength;
+        return this.node.minLength;
     }
 
     set minLength(value) {
-        this.node.minlength = value;
+        this.node.minLength = value;
     }
 
     get maxLength() {
-        return this.node.maxlength;
+        return this.node.maxLength;
     }
 
     set maxLength(value) {
-        this.node.maxlength = value;
+        this.node.maxLength = value;
     }
 
     get pattern() {
@@ -2075,32 +2100,111 @@ export class TextField extends Label {
     set pattern(value) {
         this.node.pattern = value;
     }
+
+    /**
+     * this method can be used to focus the dom node
+     */
+    focus() {
+        this.node.focus();
+    }
+
+    /**
+     * this method clears the textfield
+     */
+    clear() {
+        this.text = "";
+    }
+
+    /**
+     * the methods below are used to trigger callback functions and propagate click events to observers
+     */
+    _onChangeWrapper() {
+        const onChange = this.onChange;
+        if (onChange !== undefined) { onChange(); }
+
+        this.notifyAll(new Event(TextField.TEXT_FIELD_CHANGE_NOTIFICATION_TYPE, this));
+    }
+
+    _onKeyPressWrapper() {
+        const onKeyPress = this.onKeyPress;
+        if (onKeyPress !== undefined) { onKeyPress(); }
+
+        this.notifyAll(new Event(TextField.TEXT_FIELD_KEYPRESS_NOTIFICATION_TYPE, this));
+    }
+
+    _onPasteWrapper() {
+        const onPaste = this.onPaste;
+        if (onPaste !== undefined) { onPaste(); }
+
+        this.notifyAll(new Event(TextField.TEXT_FIELD_PASTE_NOTIFICATION_TYPE, this));
+    }
+
+    _onInputWrapper() {
+        const onInput = this.onInput;
+        if (onInput !== undefined) { onInput(); }
+
+        this.notifyAll(new Event(TextField.TEXT_FIELD_INPUT_NOTIFICATION_TYPE, this));
+    }
+
+    /**
+     * this method is used to attach listeners on the dom element
+     */
+    _addListeners() {
+        const node = this.node;
+
+        node.addEventListener(TextField.TEXT_FIELD_CHANGE_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true);
+        node.addEventListener(TextField.TEXT_FIELD_KEYPRESS_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true);
+        node.addEventListener(TextField.TEXT_FIELD_PASTE_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true);
+        node.addEventListener(TextField.TEXT_FIELD_INPUT_NOTIFICATION_TYPE, this._onChangeWrapper.bind(this), true);
+    }
+
+    /**
+     * this method checks if the text input satisfies all validation constraints set on the text field and issues a visual warning message if needed 
+     * @returns a boolean flag to indicate wether the content is valid
+     */
+    validate() {
+        return this.node.reportValidity();
+    }
 }
 
+/**
+ * this class is used to create a broader area for text input
+ */
 export class TextArea extends TextField {
 
-
+    /**
+     * this constant is used to define resizing options
+     */
     static get Resize() {
         return Object.freeze({
             both: "both",
             horizontal: "horizontal",
             vertical: "vertical",
-            none: "none"
+            none: "none",
         });
     }
 
+    /**
+     * this constant is used to define css wrapping options
+     */
     static get Wrap() {
         return Object.freeze({
             hard: "hard",
             soft: "soft",
-            off: "off"
+            off: "off",
         });
     }
 
+    /**
+     * this view uses an textarea html tag
+     */
     static get tag() {
         return "textarea";
     }
 
+    /**
+     * the getters/setters below provide access to ui properties
+     */
     get rows() {
         return this.node.rows;
     }
@@ -2134,48 +2238,72 @@ export class TextArea extends TextField {
     }
 }
 
+/**
+ * this is a wrapper class for html p-nodes
+ */
 export class TextView extends Label {
     static get tag() {
         return "p";
     }
 }
 
+/**
+ * this is a wrapper class for html header-nodes
+ */
 export class Header extends View {
     static get tag() {
         return "header";
     }
 }
 
+/**
+ * this is a wrapper class for html section-nodes
+ */
 export class Section extends View {
     static get tag() {
         return "section";
     }
 }
 
+/**
+ * this is a wrapper class for html footer-nodes
+ */
 export class Footer extends View {
     static get tag() {
         return "footer";
     }
 }
 
+/**
+ * this is a wrapper class for html nav-nodes
+ */
 export class Navigation extends View {
     static get tag() {
         return "nav";
     }
 }
 
+/**
+ * this is a wrapper class for html span-nodes
+ */
 export class InlineBlock extends View {
     static get tag() {
         return "span";
     }
 }
 
+/**
+ * this is a wrapper class for html div-nodes
+ */
 export class Block extends View {
     static get tag() {
         return "div";
     }
 }
 
+/**
+ * this is a wrapper class for html h1-nodes
+ */
 export class Headline1 extends Label {
     constructor(text) {
         super(text);
@@ -2186,6 +2314,9 @@ export class Headline1 extends Label {
     }
 }
 
+/**
+ * this is a wrapper class for html h2-nodes
+ */
 export class Headline2 extends Label {
     constructor(text) {
         super(text);
@@ -2196,6 +2327,9 @@ export class Headline2 extends Label {
     }
 }
 
+/**
+ * this is a wrapper class for html h3-nodes
+ */
 export class Headline3 extends Label {
     constructor(text) {
         super(text);
@@ -2206,6 +2340,9 @@ export class Headline3 extends Label {
     }
 }
 
+/**
+ * this is a wrapper class for html h4-nodes
+ */
 export class Headline4 extends Label {
     constructor(text) {
         super(text);
@@ -2216,6 +2353,9 @@ export class Headline4 extends Label {
     }
 }
 
+/**
+ * this is a wrapper class for html h5-nodes
+ */
 export class Headline5 extends Label {
     constructor(text) {
         super(text);
@@ -2226,6 +2366,9 @@ export class Headline5 extends Label {
     }
 }
 
+/**
+ * this is a wrapper class for html h6-nodes
+ */
 export class Headline6 extends Label {
     constructor(text) {
         super(text);
@@ -2236,7 +2379,14 @@ export class Headline6 extends Label {
     }
 }
 
+/**
+ * this is a wrapper class for creating buttons
+ */
 export class Button extends Label {
+
+    /**
+     * event labels
+     */
     static get BUTTON_CLICK_NOTIFICATION_TYPE() {
         return "click";
     }
@@ -2249,6 +2399,10 @@ export class Button extends Label {
         return "mouseleave";
     }
 
+    static get tag() {
+        return "button";
+    }
+
     constructor(text, onClick, onMouseOver, onMouseOut) {
         super(text);
 
@@ -2259,42 +2413,9 @@ export class Button extends Label {
         this._addListeners();
     }
 
-    static get tag() {
-        return "button";
-    }
-
-    _addListeners() {
-        const node = this.node;
-
-        node.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onClickWrapper.bind(this), true); // Todo des noch ändern
-        node.addEventListener(Button.BUTTON_MOUSE_OUT_NOTIFICATION_TYPE, this._onMouseOutWrapper.bind(this), true);
-        node.addEventListener(Button.BUTTON_MOUSE_OVER_NOTIFICATION_TYPE, this._onMouseOverWrapper.bind(this), true);
-    }
-
-    _onClickWrapper(event) {
-        const onClick = this.onClick;
-        if (onClick !== undefined) onClick(event);
-
-        const e = new Event(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this);
-        this.notifyAll(e);
-    }
-
-    _onMouseOutWrapper(event) {
-        const onMouseOut = this.onMouseOut;
-        if (onMouseOut !== undefined) onMouseOut(event);
-
-        const e = new Event(Button.BUTTON_MOUSE_OUT_NOTIFICATION_TYPE, this);
-        this.notifyAll(e);
-    }
-
-    _onMouseOverWrapper(event) {
-        const onMouseOver = this.onMouseOver;
-        if (onMouseOver !== undefined) onMouseOver(event);
-
-        const e = new Event(Button.BUTTON_MOUSE_OVER_NOTIFICATION_TYPE, this);
-        this.notifyAll(e);
-    }
-
+    /**
+     * the getters/setters below are used to manage access to callback functions
+     */
     get onClick() {
         return this._onClick;
     }
@@ -2318,22 +2439,46 @@ export class Button extends Label {
     set onMouseOut(value) {
         this._onMouseOut = value;
     }
-}
-/*
-export class Option extends View {
-    get text() {
-        return this.node.text;
+
+    /**
+     * this method is used to attach listeners for callback functions on the DOM-node
+     */
+    _addListeners() {
+        const node = this.node;
+
+        node.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onClickWrapper.bind(this), true);
+        node.addEventListener(Button.BUTTON_MOUSE_OUT_NOTIFICATION_TYPE, this._onMouseOutWrapper.bind(this), true);
+        node.addEventListener(Button.BUTTON_MOUSE_OVER_NOTIFICATION_TYPE, this._onMouseOverWrapper.bind(this), true);
     }
 
-    set text(value) {
-        this.node.text = value;
+    /**
+     * these wrapper functions are needed to notify observers and trigger callback functions
+     */
+    _onClickWrapper(event) {
+        const onClick = this.onClick;
+        if (onClick !== undefined) { onClick(event); }
+
+        this.notifyAll(new Event(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this));
     }
 
-    static get tag() {
-        return "option";
+    _onMouseOutWrapper(event) {
+        const onMouseOut = this.onMouseOut;
+        if (onMouseOut !== undefined) { onMouseOut(event); }
+
+        this.notifyAll(new Event(Button.BUTTON_MOUSE_OUT_NOTIFICATION_TYPE, this));
+    }
+
+    _onMouseOverWrapper(event) {
+        const onMouseOver = this.onMouseOver;
+        if (onMouseOver !== undefined) { onMouseOver(event); }
+
+        this.notifyAll(new Event(Button.BUTTON_MOUSE_OVER_NOTIFICATION_TYPE, this));
     }
 }
-*/
+
+/**
+ * this is a wrapper class for html-select tags
+ */
 export class Select extends View {
 
     constructor() {
@@ -2342,10 +2487,16 @@ export class Select extends View {
         this._addListeners();
     }
 
-    static get SELECT_ON_SELECTION_TYPE_NOTIFICATION() { // todo namen vereinheitlichen
+    /**
+     * label for selection events
+     */
+    static get SELECT_ON_SELECTION_TYPE_NOTIFICATION() {
         return "select";
     }
 
+    /**
+     * the setters/getters below manage access for native css properties 
+     */
     get options() {
         return this.node.options;
     }
@@ -2359,20 +2510,24 @@ export class Select extends View {
     }
 
     get selectedOption() {
-        const options = this.options;
-        const selectedIndex = this.selectedIndex;
-        if (options.length < 1 || selectedIndex < 0) return;
+        const options = this.options, selectedIndex = this.selectedIndex;
+        if (options.length < 1 || selectedIndex < 0) { return undefined; }
 
         return options[selectedIndex];
     }
 
+    /**
+     * this method is used to attach native listeners an bind callback functions
+     */
     _addListeners() {
-        this.node.addEventListener(Select.SELECT_ON_SELECTION_TYPE_NOTIFICATION, this._onSelect.bind(this), true); // Todo des noch ändern
+        this.node.addEventListener(Select.SELECT_ON_SELECTION_TYPE_NOTIFICATION, this._onSelect.bind(this), true);
     }
 
-    _onSelect(event) {
-        const e = new Event(Select.SELECT_ON_SELECTION_TYPE_NOTIFICATION, this);
-        this.notifyAll(e);
+    /**
+     * this method is used to notify observers upon selection
+     */
+    _onSelect() {
+        this.notifyAll(new Event(Select.SELECT_ON_SELECTION_TYPE_NOTIFICATION, this));
     }
 
     static get tag() {
@@ -2380,11 +2535,14 @@ export class Select extends View {
     }
 }
 
+/**
+ * this class is used to provide a root view as anchor to attach child views
+ */
 class ViewPortAnchor extends View {
     static _sharedInstance;
 
     static get sharedInstance() {
-        if (ViewPortAnchor._sharedInstance === undefined) ViewPortAnchor._sharedInstance = new ViewPortAnchor();
+        if (ViewPortAnchor._sharedInstance === undefined) { ViewPortAnchor._sharedInstance = new ViewPortAnchor(); }
 
         return ViewPortAnchor._sharedInstance;
     }
@@ -2398,104 +2556,34 @@ class ViewPortAnchor extends View {
     }
 }
 
+/**
+ * this class resembles a view container that encapsulates logic and provides lifecycle control
+ */
 export class Controller extends Observable {
-
-    static get CONTROLLER_STATE_CHANGE_NOTIFICATION_TYPE() {
-        return "state";
+    /**
+     * event labels
+     */
+    static get PRESENTATION_STATE_CHANGE_NOTIFICATION_TYPE() {
+        return "presentationStateChanged";
     }
 
-    static get State() {
+    static get VIEWS_CREATED_NOTIFICATION_TYPE() {
+        return "viewsCreated";
+    }
+
+    /**
+     * this constant is used to define states for when the controller is displaying content and presenting another controller
+     */
+    static get PresentationState() {
         return Object.freeze({
             presented: "presented",
-            presenting: "presenting"
+            presenting: "presenting",
         });
     }
 
-    get state() {
-        return this._state;
-    }
-
-    set state(value) {
-        if (this.state === value) return;
-
-        this._state = value;
-        this._onStateChange();
-    }
-
-    constructor() {
-        super();
-        this._controllers = [];
-
-        this._createView();
-
-        this._determineState();
-    }
-
-    get controllers() {
-        return this._controllers;
-    }
-
-    _createView() {
-        //const view = new Section();
-        const stackView = new StackView(StackView.Axis.vertical, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.stretch);
-        this._view = stackView;
-
-        return stackView;
-    }
-
-    addController(controller, parentView = this.view) {
-        if (controller.parentController !== undefined) throw new Error("Cannot add controller to more than one parent controller");
-
-        this.controllers.push(controller);
-
-        controller.parentController = this;
-
-        parentView.addView(controller.view);
-
-        this._determineState();
-    }
-
-    _determineState() {
-        this.state = this.controllers.length > 0 ? Controller.State.presenting : Controller.State.presented;
-    }
-
-    _onStateChange() {
-        const event = new Event(Controller.CONTROLLER_STATE_CHANGE_NOTIFICATION_TYPE, this);
-        this.notifyAll(event);
-    }
-
-    removeController(controller) {
-        const controllers = this.controllers;
-        const index = controllers.indexOf(controller);
-
-        const view = controller.view;
-        const parentView = view.parentView;
-        if (parentView !== undefined) parentView.removeView(view);
-
-        if (index >= 0) controllers.splice(index, 1);
-        controller.parentController = undefined;
-
-        this._determineState();
-
-        return controller;
-    }
-
-    removeFromParentController() {
-        const parentController = this.parentController;
-
-        if (parentController === undefined) return;
-
-        parentController.removeController(this);
-
-        return parentController;
-    }
-
-    removeControllers() {
-        const controllers = this.controllers;
-
-        controllers.splice(0, controllers.length).forEach(controller => controller.removeFromParentController());
-    }
-
+    /**
+     * this getter/setter-pair is used to manage access to the parent controller if an instance has been presenting this controller
+     */
     get parentController() {
         return this._parentController;
     }
@@ -2504,11 +2592,136 @@ export class Controller extends Observable {
         this._parentController = value;
     }
 
+    /**
+     * this getter exposes this root view of the controller as anchor for other views
+     */
     get view() {
         return this._view;
     }
+
+    /**
+     * this getter/setter-pair is used to expose the current state of presentation
+     */
+    get presentationState() {
+        return this._presentationState;
+    }
+
+    set presentationState(value) {
+        if (this.presentationState === value) { return; }
+
+        this._presentationState = value;
+        this._onPresentationStateChange();
+    }
+
+    /**
+     * this getter us used to access child controllers that may have been presented
+     */
+    get controllers() {
+        return this._controllers;
+    }
+
+    constructor() {
+        super();
+        this._controllers = [];
+
+        this._createView();
+        this._onViewsCreated();
+        this._determinePresentationState();
+    }
+
+    /**
+     * this method gets called if the controller has finished loading its own views
+     */
+    _onViewsCreated() {
+        const event = new Event(Controller.VIEWS_CREATED_NOTIFICATION_TYPE, this);
+        this.notifyAll(event);
+    }
+
+    /**
+     * this method is used to create the root view of the controller
+     * @returns an instance of view
+     */
+    _createView() {
+        const stackView = new StackView(StackView.Axis.vertical, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.stretch);
+        this._view = stackView;
+
+        return stackView;
+    }
+
+    /**
+     * this method is used to present another controller in a given view
+     * @param {Controller} controller 
+     * @param {View} parentView 
+     */
+    addController(controller, parentView = this.view) {
+        if (controller.parentController !== undefined) { throw new Error("Cannot add controller to more than one parent controller"); }
+
+        this.controllers.push(controller);
+
+        controller.parentController = this;
+
+        parentView.addView(controller.view);
+
+        this._determinePresentationState();
+    }
+
+    /**
+     * this method is used to determine the current presentation mode 
+     */
+    _determinePresentationState() {
+        this.presentationState = this.controllers.length > 0 ? Controller.PresentationState.presenting : Controller.PresentationState.presented;
+    }
+
+    /**
+     * this method is used to notify observers of a presentation change state
+     */
+    _onPresentationStateChange() {
+        const event = new Event(Controller.PRESENTATION_STATE_CHANGE_NOTIFICATION_TYPE, this);
+        this.notifyAll(event);
+    }
+
+    /**
+     * this method is used to dismiss a controller if currently presented
+     * @param {Controller} controller 
+     * @returns 
+     */
+    removeController(controller) {
+        const controllers = this.controllers, index = controllers.indexOf(controller), view = controller.view, parentView = view.parentView;
+        if (parentView !== undefined) { parentView.removeView(view); }
+
+        if (index >= 0) { controllers.splice(index, 1); }
+        controller.parentController = undefined;
+
+        this._determinePresentationState();
+
+        return controller;
+    }
+
+    /**
+     * this method is used to purge all presented controllers
+     */
+    removeControllers() {
+        this.controllers.forEach(this.removeController.bind(this));
+    }
+
+    /**
+     * this method is used to remove this controller instance from its parent controller
+     * @returns the parent controller or undefined
+     */
+    removeFromParentController() {
+        const parentController = this.parentController;
+
+        if (parentController === undefined) { return undefined; }
+
+        parentController.removeController(this);
+
+        return parentController;
+    }
 }
 
+/**
+ * this class is used to create a page-filling root controller for other controllers to attach to
+ */
 export class RootController extends Controller {
     constructor() {
         super();
@@ -2516,12 +2729,19 @@ export class RootController extends Controller {
         this._attachView();
     }
 
+    /**
+     * this method is needed to attach this root controller to the document
+     */
     _attachView() {
         const view = this.view;
 
         ViewPortAnchor.sharedInstance.addView(view);
     }
 
+    /**
+     * this method is overridden from its superclass to facilitate a page-filling view
+     * @returns the main view of the controller
+     */
     _createView() {
         const view = super._createView();
 
@@ -2534,6 +2754,10 @@ export class RootController extends Controller {
         return view;
     }
 
+    /**
+     * this method is adapted to account for the absence of an presenting controller
+     * @returns parent controller or undefined
+     */
     removeFromParentController() {
         const parentController = super.removeFromParentController();
 

@@ -1,9 +1,13 @@
-"use strict";
+import { View, Color, StackView, Label, Padding, Borders, Border, Gap, Controller, Corners, RoundedCorner } from "../UI/libs/WrappedUI.js";
 
-import { View, Color, StackView, Label, Padding, Borders, Border, Controller, Gap } from "../UI/libs/WrappedUI.js";
-
+/**
+ * this controller represents the base for all embedded controllers setting base behavior and properties. It also sets the base appearance.
+ */
 export default class BGController extends Controller {
 
+    /**
+     * below are getters to access ui elements and their properties
+     */
     get titleLabel() {
         return this._titleLabel;
     }
@@ -24,6 +28,9 @@ export default class BGController extends Controller {
         return this._contentView;
     }
 
+    /**
+    * below are several functions to create views an manage the controllers view hierarchy. 
+     */
     _createTitleLabel() {
         const label = new Label();
 
@@ -37,33 +44,30 @@ export default class BGController extends Controller {
     }
 
     _createHeaderView() {
-        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.center, Gap.all("5px"));
+        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.center, Gap.all("5px")), titleLabel = this._createTitleLabel();
 
         stackView.shrink = "0";
         stackView.backgroundColor = Color.white;
         stackView.padding = Padding.axes("15px", "10px");
         stackView.borders = Borders.bottom(new Border(Color.darkGreen, "1px"));
 
-        const titleLabel = this._createTitleLabel();
         this._titleLabel = titleLabel;
         stackView.addView(titleLabel);
-        //stackView.shadow = new BoxShadow("0px", "5px", new Color(0, 0, 0, 0.25), "5px", "3px");
 
         return stackView;
     }
 
     _createView() {
-        const view = super._createView();
+        const view = super._createView(), headerView = this._createHeaderView(), contentView = this._createContentView();
         view.backgroundColor = Color.white;
+        view.corners = Corners.all(new RoundedCorner("15px"));
         view.overflow = View.Overflow.hidden;
+        view.position = View.Position.relative;
 
-        const headerView = this._createHeaderView();
         view.addView(headerView);
         this._headerView = headerView;
 
-        const contentView = this._createContentView();
         this._contentView = contentView;
-        //contentView.grow = "1";
         view.addView(contentView);
 
         return view;
@@ -71,7 +75,6 @@ export default class BGController extends Controller {
 
     _createContentView() {
         const stackView = new StackView(StackView.Axis.vertical, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.stretch);
-        //stackView.grow = "1";
 
         return stackView;
     }
