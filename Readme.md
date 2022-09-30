@@ -15,7 +15,7 @@ BeGreen veringert die Einstiesghürde und motiviert Personen unterschiedlicher A
 - Nutzer zu Gruppe einladen
 - Kommunikation mit anderen Nutzern innerhalb einer Gruppe
 
-### Aktuellster Release
+### Link zur Anwendung
 https://begreen.software-engineering.education/
 
 ## Beschreibung & Anleitung
