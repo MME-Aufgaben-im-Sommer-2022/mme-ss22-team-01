@@ -69,9 +69,6 @@ Kann der Nutzer eine Challenge in der Ansicht nicht finden, befindet sich rechts
 4. Befehl: npm install prebuild
 5. Befehl: npm run dev
 
-## Link zur Anwendung
-[BeGreen](https://begreen.software-engineering.education/)
-
 ## Team
 
 | Name  | E-Mail | Foto | Entwickelte Bereiche |
