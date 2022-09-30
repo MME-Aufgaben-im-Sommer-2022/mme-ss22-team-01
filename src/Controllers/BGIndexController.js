@@ -270,9 +270,9 @@ export default class BGIndexController extends RootController {
         let score = 0;
 
         const previewDocuments = await this.previewManager.loadResources([Query.equal("$id", containerId)]);
-        if (previewDocuments.length > 0) { score = `${previewDocuments[0].score} 🍀`; }
+        if (previewDocuments.length > 0) { score = previewDocuments[0].score; }
 
-        this.score = score;
+        this.score = `${score} 🍀`;
     }
 
     /**
