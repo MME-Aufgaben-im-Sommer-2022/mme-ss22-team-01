@@ -1,5 +1,5 @@
-function init() {
-    console.log("### Starting MME Project ###"); // eslint-disable-line no-console
-}
+import BGIndexController from "../../app/src/Controllers/BGIndexController.js";
+import Logger from "./utils/Logger.js";
 
-init();
+Logger.sharedInstance.isEnabled = false;
+window.indexController = new BGIndexController();
