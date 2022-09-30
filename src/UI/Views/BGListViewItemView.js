@@ -1,10 +1,14 @@
-"use strict";
-
 import { Gap, StackView } from "../libs/WrappedUI.js";
 import { Event } from "../../utils/Observable.js";
 
+/**
+ * this class is the base class for list view items
+ */
 export default class BGListViewItemView extends StackView {
 
+    /**
+     * event label
+     */
     static get ITEM_VIEW_SELECTED_NOTIFICATION_TYPE() {
         return "itemViewSelected";
     }
@@ -20,6 +24,9 @@ export default class BGListViewItemView extends StackView {
         this.data = data;
     }
 
+    /**
+     * getters/setters to manage access to internal properties and layout props
+     */
     set listView(value) {
         this._listView = value;
     }
@@ -50,8 +57,26 @@ export default class BGListViewItemView extends StackView {
         this.contentView.padding = value;
     }
 
+    /**
+     * this method gets called if the user clicks on the content view, it then notifies its observers
+     */
+    didSelect() {
+        const event = new Event(BGListViewItemView.ITEM_VIEW_SELECTED_NOTIFICATION_TYPE, this);
+        this.notifyAll(event);
+    }
+
+    /**
+     * this method is used to bridge the gap between views and data, it must be overridden in subclasses to assign data to views
+     */
+    _applyData() {
+        // do nothing.
+    }
+
+    /**
+     * the methods below are used to manage/create the view hierarchy
+     */
     _createView() {
-        const contentView = this._createContentView();        
+        const contentView = this._createContentView();
         this._contentView = contentView;
         this.addView(contentView);
 
@@ -64,13 +89,5 @@ export default class BGListViewItemView extends StackView {
         stackView.addDOMEventListener("click", this.didSelect.bind(this), true);
 
         return stackView;
-    }
-
-    didSelect() {
-        const event = new Event(BGListViewItemView.ITEM_VIEW_SELECTED_NOTIFICATION_TYPE, this);
-        this.notifyAll(event);
-    }
-
-    _applyData() {
     }
 }

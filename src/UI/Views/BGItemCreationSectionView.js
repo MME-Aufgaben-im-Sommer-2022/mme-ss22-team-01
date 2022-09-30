@@ -1,9 +1,15 @@
-"use strict";
-
+/*eslint no-magic-numbers: "off"*/
 import { Border, Borders, Button, Color, Corners, Icon, Gap, Label, Padding, RoundedCorner, StackView, TextField } from "../libs/WrappedUI.js";
 import { Event } from "../../utils/Observable.js";
 
+/**
+ * this view is used to visually an listview section with one item, but it should also allow for text entry and validation
+ */
 export default class BGItemCreationSectionView extends StackView {
+
+    /**
+     * event label
+     */
     static get ENTRY_COMPLETE_NOTIFICATION_TYPE() {
         return "complete";
     }
@@ -11,55 +17,17 @@ export default class BGItemCreationSectionView extends StackView {
     constructor() {
         super(StackView.Axis.vertical, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.stretch, Gap.all("5px"));
 
-        const titleLabel = this._createTitleLabel();
+        const titleLabel = this._createTitleLabel(), contentView = this._createContentView();
         this._titleLabel = titleLabel;
         this.addView(titleLabel);
 
-        const contentView = this._createContentView();
         this._contentView = contentView;
         this.addView(contentView);
-
     }
 
-    get contentView() {
-        return this._contentView;
-    }
-
-    _createLeadingContainer() {
-        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.center, Gap.all("3px"));
-
-        const nameTextField = this._createNameTextField();
-        this._nameTextField = nameTextField;
-        stackView.addView(nameTextField);
-        
-        return stackView;
-    }
-
-    _createTrailingContainer() {
-        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.center, Gap.all("3px"));
-
-        const button = this._createButton();
-        this._button = button;
-        stackView.addView(button);
-
-        return stackView;
-    }
-
-    _createContentView() {
-        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.center, Gap.all("5px"));
-        stackView.backgroundColor = new Color(240, 240, 240);
-        stackView.corners = Corners.all(new RoundedCorner("10px"));
-        stackView.padding = Padding.all("10px");
-
-        const leadingContainer = this._createLeadingContainer();
-        stackView.addView(leadingContainer);
-
-        const trailingContainer = this._createTrailingContainer();
-        stackView.addView(trailingContainer);
-
-        return stackView;
-    }
-
+    /**
+     * the getters below are used to expose access to ui elements and their properties such as text input validation.
+     */
     get textInputType() {
         return this.nameTextField.textInputType;
     }
@@ -112,6 +80,68 @@ export default class BGItemCreationSectionView extends StackView {
         this.button.text = value;
     }
 
+    get contentView() {
+        return this._contentView;
+    }
+
+    /**
+     * this method is used to return wether user-input of the text field satisfies all validation constraints or not
+     * @returns boolean
+     */
+    _validate() {
+        return this.nameTextField.validate();
+    }
+
+    /**
+     * this method is used to handle textinput events and may be overridden to implement new functionality upon text changes
+     */
+    _onNameChange() {
+        // do nothing.
+    }
+
+    /**
+     * this method is called by pressing the submit button. it triggers input validation and notifies observers of a successful creation if applicable. 
+     */
+    _onButtonClicked() {
+        if (this._validate() === false) { return; }
+
+        const event = new Event(BGItemCreationSectionView.ENTRY_COMPLETE_NOTIFICATION_TYPE, this);
+        this.notifyAll(event);
+    }
+
+    /**
+     * the methods below are used to create/manage the view hierarchy.
+     */
+    _createLeadingContainer() {
+        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.center, Gap.all("3px")), nameTextField = this._createNameTextField();
+
+        this._nameTextField = nameTextField;
+        stackView.addView(nameTextField);
+
+        return stackView;
+    }
+
+    _createTrailingContainer() {
+        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.center, Gap.all("3px")), button = this._createButton();
+
+        this._button = button;
+        stackView.addView(button);
+
+        return stackView;
+    }
+
+    _createContentView() {
+        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.center, Gap.all("5px")), leadingContainer = this._createLeadingContainer(), trailingContainer = this._createTrailingContainer();
+        stackView.backgroundColor = new Color(240, 240, 240);
+        stackView.corners = Corners.all(new RoundedCorner("10px"));
+        stackView.padding = Padding.all("10px");
+
+        stackView.addView(leadingContainer);
+        stackView.addView(trailingContainer);
+
+        return stackView;
+    }
+
     _createTitleLabel() {
         const label = new Label();
         label.text = "Header";
@@ -137,26 +167,11 @@ export default class BGItemCreationSectionView extends StackView {
         return button;
     }
 
-    _createConfirmIcon(){
+    _createConfirmIcon() {
         const icon = new Icon();
         icon.classList.add("fa-solid", "fa-check");
         icon.color = Color.darkGreen;
         return icon;
-    }
-
-    _onNameChange(event) {
-        console.log(event);
-    }
-
-    _validate() {
-        return this.nameTextField.validate();
-    }
-
-    _onButtonClicked() {
-        if (this._validate() === false) return;
-
-        const event = new Event(BGItemCreationSectionView.ENTRY_COMPLETE_NOTIFICATION_TYPE, this);
-        this.notifyAll(event);
     }
 
     _createNameTextField() {

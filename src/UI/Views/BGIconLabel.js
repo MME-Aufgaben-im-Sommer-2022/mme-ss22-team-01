@@ -1,5 +1,8 @@
 import { Label, Color, Padding, Corners, RoundedCorner } from "../libs/WrappedUI.js";
 
+/**
+ * this class is used to display a rounded label containing only one character
+ */
 export default class BGIconLabel extends Label {
     constructor() {
         super();
@@ -14,11 +17,6 @@ export default class BGIconLabel extends Label {
         this.minWidth = "15px";
         this.minHeight = "15px";
         this.maxHeight = "40px";
-        this.text = "N";
-    }
-
-    _recalculateSize() {
-        this.minWidth = "19px";
-        this.minHeight = "19px";
+        this.text = "";
     }
 }

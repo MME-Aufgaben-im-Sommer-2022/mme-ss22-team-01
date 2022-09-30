@@ -1,12 +1,17 @@
-"use strict";
-
-import { Border, Borders, Button, Color, Corners, Icon, Gap, Padding, RoundedCorner, StackView, TextField, Label } from "../UI/libs/WrappedUI.js";
+/*eslint no-magic-numbers: "off"*/
+import { Border, Borders, Button, Color, Corners, Icon, Gap, Padding, RoundedCorner, StackView, TextField } from "../UI/libs/WrappedUI.js";
 import { Event } from "../utils/Observable.js";
 import BGItemCreationController from "./BGItemCreationController.js";
 import BGRemoteSectionedListViewController from "./BGRemoteSectionedListViewController.js";
 
+/**
+ * this class is used to resemble a searchable list that can add new items
+ */
 export default class BGSearchableListViewController extends BGRemoteSectionedListViewController {
 
+    /**
+     * event labels
+     */
     static get SEARCH_END_NOTIFICATION_TYPE() {
         return "searchEnd";
     }
@@ -23,8 +28,21 @@ export default class BGSearchableListViewController extends BGRemoteSectionedLis
         return "changeEnd";
     }
 
+    /**
+     * this constant is used to define a text entry timeout in milliseconds
+     */
     static get TEXT_CHANGE_TIMEOUT_MILLISECONDS() {
         return 300;
+    }
+
+    /**
+     * this constant is used to define two states for the controller. 
+     */
+    static get ListMode() {
+        return Object.freeze({
+            default: "default",
+            searching: "searching",
+        });
     }
 
     constructor(itemViewClass, headerViewClass, listMode = BGSearchableListViewController.ListMode.default) {
@@ -33,15 +51,15 @@ export default class BGSearchableListViewController extends BGRemoteSectionedLis
         this.listMode = listMode;
     }
 
-    get itemCreationController() {
-        return this._itemCreationController;
+    /**
+     * the getters below are used to manage access to ui elements and their properties and other critical properties
+     */
+    get headerButtonsView() {
+        return this._headerButtonsView;
     }
 
-    static get ListMode() {
-        return Object.freeze({
-            default: "default",
-            searching: "searching"
-        });
+    get itemCreationController() {
+        return this._itemCreationController;
     }
 
     get listMode() {
@@ -86,6 +104,17 @@ export default class BGSearchableListViewController extends BGRemoteSectionedLis
         return this._cancelButton;
     }
 
+    get addIcon() {
+        return this._addIcon;
+    }
+
+    get addButton() {
+        return this._addButton;
+    }
+
+    /**
+     * the methods below are used to create/manage the view hierarchy
+     */
     _createSearchBar() {
         const textField = new TextField();
         textField.isHidden = true;
@@ -106,18 +135,18 @@ export default class BGSearchableListViewController extends BGRemoteSectionedLis
     }
 
     _createSearchButton() {
-        const button = this._createHeaderButton();
+        const button = this._createHeaderButton(), searchIcon = this._createSearchIcon();
         button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this.showSearchBar.bind(this));
-        const searchIcon = this._createSearchIcon();
+
         button.addView(searchIcon);
 
         return button;
     }
 
     _createCloseButton() {
-        const button = this._createHeaderButton();
+        const button = this._createHeaderButton(), closeIcon = this._createCloseIcon();
         button.isHidden = true;
-        const closeIcon = this._createCloseIcon();
+
         button.addView(closeIcon);
 
         return button;
@@ -146,16 +175,6 @@ export default class BGSearchableListViewController extends BGRemoteSectionedLis
         return button;
     }
 
-    _onHeaderButtonMouseOver(event) {
-        const button = event.data;
-        button.backgroundColor = Color.lightGrey;
-    }
-
-    _onHeaderButtonMouseOut(event) {
-        const button = event.data;
-        button.backgroundColor = Color.transparent;
-    }
-
     _createIcon() {
         const icon = new Icon();
         icon.color = Color.darkGreen;
@@ -180,21 +199,17 @@ export default class BGSearchableListViewController extends BGRemoteSectionedLis
     }
 
     _createHeaderButtonsView() {
-        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.center, Gap.all("2px"));
+        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.center, Gap.all("2px")), searchButton = this._createSearchButton(), hideSearchBarButton = this._createHideSearchBarButton(), addButton = this._createAddButton(), cancelButton = this._creatCancelButton();
 
-        const searchButton = this._createSearchButton();
         this._searchButton = searchButton;
         stackView.addView(searchButton);
 
-        const hideSearchBarButton = this._createHideSearchBarButton();
         this._hideSearchBarButton = hideSearchBarButton;
         stackView.addView(hideSearchBarButton);
 
-        const addButton = this._createAddButton();
         this._addButton = addButton;
         stackView.addView(addButton);
 
-        const cancelButton = this._creatCancelButton();
         this._cancelButton = cancelButton;
         stackView.addView(cancelButton);
 
@@ -208,31 +223,67 @@ export default class BGSearchableListViewController extends BGRemoteSectionedLis
         return button;
     }
 
-    get headerButtonsView() {
-        return this._headerButtonsView;
-    }
-
     _createHeaderView() {
-        const headerView = super._createHeaderView();
+        const headerView = super._createHeaderView(), searchBar = this._createSearchBar(), headerButtonsView = this._createHeaderButtonsView();
 
-        const searchBar = this._createSearchBar();
         this._searchBar = searchBar;
         headerView.addView(searchBar);
 
-        const headerButtonsView = this._createHeaderButtonsView();
         this._headerButtonsView = headerButtonsView;
         headerView.addView(headerButtonsView);
 
         return headerView;
     }
 
+    _createAddIcon() {
+        const icon = this._createIcon();
+        icon.classList.add("fa-plus");
+
+        return icon;
+    }
+
+    _createAddButton() {
+        const button = this._createHeaderButton(), addIcon = this._createAddIcon();
+        button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this.showItemCreationController.bind(this));
+
+        this._addIcon = addIcon;
+        button.addView(addIcon);
+
+        return button;
+    }
+
+    /**
+     * this method is used to highlight header buttons on hover
+     * @param {Event} event 
+     */
+    _onHeaderButtonMouseOver(event) {
+        const button = event.data;
+        button.backgroundColor = Color.lightGrey;
+    }
+
+     /**
+     * this method is used to unhighlight header buttons if the user exits the elements bounds
+     * @param {Event} event 
+     */
+    _onHeaderButtonMouseOut(event) {
+        const button = event.data;
+        button.backgroundColor = Color.transparent;
+    }
+
+    /**
+     * this method is used to show/hide the searchbar
+     * @param {boolean} show 
+     */
     _toggleSearchBar(show) {
         this.titleLabel.isHidden = show;
         this.searchButton.isHidden = show;
         this.hideSearchBarButton.isHidden = !show;
         this.searchBar.isHidden = !show;
     }
-    
+
+    /**
+     * this method is used to update the controllers appearance on a mode change
+     */
     _applyListMode() {
         const listMode = this._listMode;
 
@@ -248,62 +299,63 @@ export default class BGSearchableListViewController extends BGRemoteSectionedLis
         }
     }
 
+    /**
+     * this method is invoked upon every text change. It starts a timer with an predefined delay to indicate that text entry has concluded
+     */
     _onSearchTextChange() {
         const timeout = this._timeout;
-        if (timeout !== undefined) clearTimeout(timeout);
+        if (timeout !== undefined) { clearTimeout(timeout); }
         this._timeout = setTimeout(this._onSearchTextChangeEnd.bind(this), BGSearchableListViewController.TEXT_CHANGE_TIMEOUT_MILLISECONDS);
     }
 
+    /**
+     * this method gets called if the timer resolves, marking the end of an text entry
+     */
     _onSearchTextChangeEnd() {
         const event = new Event(BGSearchableListViewController.SEARCH_CHANGE_END_NOTIFICATION_TYPE, this);
         this.notifyAll(event);
     }
 
+    /**
+     * this method gets called if users press the search button
+     */
     _onSearchStart() {
+        this.searchBar.focus();
+
         const event = new Event(BGSearchableListViewController.SEARCH_START_NOTIFICATION_TYPE, this);
         this.notifyAll(event);
     }
 
+    /**
+     * this method gets called if users cancel the search manually by pressing the x button
+     */
     _onSearchEnd() {
+        this.searchBar.clear();
+        this.updateSections();
+
         const event = new Event(BGSearchableListViewController.SEARCH_END_NOTIFICATION_TYPE, this);
         this.notifyAll(event);
     }
 
-    showSearchBar(event) {
+    /**
+     * this method is used to show the searchbar and toggle events
+     */
+    showSearchBar() {
         this.listMode = BGSearchableListViewController.ListMode.searching;
         this._onSearchStart();
     }
 
-    hideSearchBar(event) {
+    /**
+     * this method is used to show the searchbar and toggle events
+     */
+    hideSearchBar() {
         this.listMode = BGSearchableListViewController.ListMode.default;
         this._onSearchEnd();
     }
 
-    get addIcon() {
-        return this._addIcon;
-    }
-
-    _createAddIcon() {
-        const icon = this._createIcon();
-        icon.classList.add("fa-plus");
-
-        return icon;
-    }
-
-    _createAddButton() {
-        const button = this._createHeaderButton();
-        button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this.showItemCreationController.bind(this));
-        const addIcon = this._createAddIcon();
-        this._addIcon = addIcon;
-        button.addView(addIcon);
-
-        return button;
-    }
-
-    get addButton() {
-        return this._addButton;
-    }
-
+    /**
+     * this method is used to present the user with a new controller to create new items in
+     */
     showItemCreationController() {
         this.hideItemCreationController();
 
@@ -320,6 +372,9 @@ export default class BGSearchableListViewController extends BGRemoteSectionedLis
         this._itemCreationController = itemCreationController;
     }
 
+    /**
+     * this method is used to dismiss the creation controller
+     */
     hideItemCreationController() {
         this.listView.isHidden = false;
         this.searchButton.isHidden = false;
@@ -327,19 +382,30 @@ export default class BGSearchableListViewController extends BGRemoteSectionedLis
         this.addButton.isHidden = false;
 
         const itemCreationController = this.itemCreationController;
-        if (itemCreationController === undefined) return;
+        if (itemCreationController === undefined) { return; }
         itemCreationController.removeFromParentController();
     }
 
+    /**
+     * this method creates the controller for new items, it may be overridden in subclasses
+     * @returns an instance of BGItemCreationController
+     */
     _createItemCreationController() {
         return new BGItemCreationController();
     }
 
+    /**
+     * this method hides the controller upon a new item creation
+     * @param {Event} event 
+     */
     _onItemConfigurationFinished(event) {
         this.hideItemCreationController();
         this.notifyAll(event);
     }
 
+     /**
+     * this method is used to prepare the ui for loading data
+     */
     startLoading() {
         super.startLoading();
 
@@ -347,6 +413,9 @@ export default class BGSearchableListViewController extends BGRemoteSectionedLis
         this.headerButtonsView.isDisabled = true;
     }
 
+     /**
+     * this method is used to resolve the loading state
+     */
     stopLoading() {
         super.stopLoading();
 

@@ -1,5 +1,3 @@
-"use strict";
-
 class Event {
     constructor(type, data) {
         this.type = type;

@@ -1,7 +1,8 @@
-"use strict";
-
 import BGListViewItemData from "./BGListViewItemData.js";
 
+/**
+ * this class is used to pose as data source for message items
+ */
 export default class BGListViewMessageItemData extends BGListViewItemData {
     constructor(id, createdAt, updatedAt, text, name, isForeign) {
         super(id, createdAt, updatedAt);

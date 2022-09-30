@@ -1,8 +1,13 @@
-"use strict";
-
 import BGContactListViewItemView from "./BGContactListViewItemView.js";
 
+/**
+ * this view is used to adapt the default contact list item view for use in a leaderboard list.
+ */
 export default class BGContactListViewLeaderboardView extends BGContactListViewItemView {
+
+    /**
+     * this method is overridden from its superclass to assign properties from the data source to us elements
+     */
     _applyData() {
         const data = this._data;
 
@@ -11,6 +16,9 @@ export default class BGContactListViewLeaderboardView extends BGContactListViewI
         this.rank = data.rank;
     }
 
+    /**
+     * the getters below are used to manipulate the text in ui elements
+     */
     get name() {
         return this.nameLabel.text;
     }
@@ -20,7 +28,7 @@ export default class BGContactListViewLeaderboardView extends BGContactListViewI
     }
 
     get rank() {
-        this.contactLabel.text;
+        return this.contactLabel.text;
     }
 
     set rank(value) {

@@ -1,5 +1,5 @@
-"use strict";
-
 import BGIndexController from "../../app/src/Controllers/BGIndexController.js";
+import Logger from "./utils/Logger.js";
 
-const controller = new BGIndexController();
+Logger.sharedInstance.isEnabled = false;
+window.indexController = new BGIndexController();

@@ -1,7 +1,8 @@
-"use strict";
-
 import BGListView from "./BGListView.js";
 
+/**
+ * this view is used to display a collection of items inside an one section of a list view
+ */
 export default class BGSectionedListViewSectionView extends BGListView {
     constructor(headerViewClass, itemViewClass) {
         super(itemViewClass);
@@ -10,6 +11,9 @@ export default class BGSectionedListViewSectionView extends BGListView {
         this.overflow = BGSectionedListViewSectionView.Overflow.visible;
     }
 
+    /**
+     * getter and setter pair to expose the internal list view 
+     */
     get listView() {
         return this._listView;
     }
@@ -18,6 +22,9 @@ export default class BGSectionedListViewSectionView extends BGListView {
         this._listView = value;
     }
 
+    /**
+     * this two getter and setter pairs are used to hold the data part
+     */
     get section() {
         return this._section;
     }
@@ -36,13 +43,16 @@ export default class BGSectionedListViewSectionView extends BGListView {
         this._header = value;
 
         const headerView = this.headerView;
-        if (headerView !== undefined) headerView.removeFromParentView();
+        if (headerView !== undefined) { headerView.removeFromParentView(); }
 
         this._addHeaderView();
     }
 
+    /**
+     * this getter and setter pair is used to access the internal reference to the header view class
+     */
     set headerViewClass(value) {
-        if (this.headerViewClass !== undefined) throw new Error("Cannot register multiple header view classes");
+        if (this.headerViewClass !== undefined) { throw new Error("Cannot register multiple header view classes"); }
         this._headerViewClass = value;
     }
 
@@ -50,18 +60,22 @@ export default class BGSectionedListViewSectionView extends BGListView {
         return this._headerViewClass;
     }
 
+    /**
+     * this getter manages access to the internal stored header view instance
+     */
     get sectionHeaderView() {
         return this._sectionHeaderView;
     }
-    
-    _addHeaderView() {
-        const headerViewClass = this._headerViewClass;
-        if (headerViewClass === undefined) throw new Error("A class must be registered prior to header view instanciation");
 
-        const headerView = new headerViewClass(this.header);
+    /**
+     * this method is used to add an header view to the section, the header view class must be provided as a class property
+     */
+    _addHeaderView() {
+        if (this.headerViewClass === undefined) { throw new Error("A class must be registered prior to header view instanciation"); }
+
+        const headerView = new this.headerViewClass(this.header), itemViews = this._itemViews;
         this._headerView = headerView;
 
-        const itemViews = this._itemViews;
-        itemViews.length < 1 ? this.addView(headerView) : this.addViewBefore(headerView, itemViews[0]);
+        return itemViews.length < 1 ? this.addView(headerView) : this.addViewBefore(headerView, itemViews[0]);
     }
 }

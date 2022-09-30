@@ -1,13 +1,28 @@
-"use strict";
-
+/*eslint no-magic-numbers: "off"*/
 import AppWriteAuthentication from "../../AppWrite/AppWriteAuthentication.js";
 import { Event } from "../../utils/Observable.js";
 import { Border, Borders, Button, Color, Corners, Gap, InlineBlock, Icon, Label, Margin, Padding, RoundedCorner, StackView, TextView } from "../libs/WrappedUI.js";
 import BGListViewItemView from "./BGListViewItemView.js";
 
-
+/**
+ * this view is used to create item views suitable to display challenges based on the default list view
+ */
 export default class BGChallengeListViewItemView extends BGListViewItemView {
 
+    /**
+     * this constant is used to define challenge states
+     */
+    static get ChallengeState() {
+        return Object.freeze({
+            assigned: "assigned",
+            unassigned: "unassigned",
+            expired: "expired",
+        });
+    }
+
+    /**
+     * the constants below are used as event labels
+     */
     static get CHALLENGE_ACCEPT_NOTIFICATION_TYPE() {
         return "accept";
     }
@@ -24,20 +39,15 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         return "delete";
     }
 
-    static get ChallengeState() {
-        return Object.freeze({
-            assigned: "assigned",
-            unassigned: "unassigned",
-            expired: "expired"
-        });
-    }
-
     constructor(data) {
         super(data);
 
         this.corners = Corners.all(new RoundedCorner("10px"));
     }
 
+    /**
+     * this getter is used to access the internal challenge state and to initiate ui updates upon state change
+     */
     get challengeState() {
         return this._challengeState;
     }
@@ -46,6 +56,25 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         this._challengeState = value;
 
         this._applyChallengeState();
+    }
+
+    /**
+     * the getters/setters below are used to manage access to ui elements and their properties
+     */
+    get acceptButton() {
+        return this._acceptButton;
+    }
+
+    get finishButton() {
+        return this._finishButton;
+    }
+
+    get cancelButton() {
+        return this._cancelButton;
+    }
+
+    get deleteButton() {
+        return this._deleteButton;
     }
 
     get titleLabel() {
@@ -70,65 +99,6 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
 
     set text(value) {
         this.textView.text = value;
-    }
-
-    _createView() {
-        const view = super._createView();
-        view.backgroundColor = new Color(245, 245, 245);
-
-        const dividerView = this._createDividerView();
-        view.addView(dividerView);
-
-        const buttonContainerView = this._createButtonContainerView();
-        view.addView(buttonContainerView);
-
-        return view;
-    }
-
-
-    _createContentView() {
-        const contentView = super._createContentView();
-        contentView.axis = StackView.Axis.vertical;
-        contentView.crossAxisAlignment = StackView.MainAxisAlignment.flexStart;
-        contentView.padding = Padding.all("10px");
-        contentView.gap = Gap.all("5px");
-
-        const titleLabel = this._createTitleLabel();
-        contentView.addView(titleLabel);
-        this._titleLabel = titleLabel;
-
-        const textView = this._createTextView();
-        contentView.addView(textView);
-        this._textView = textView;
-
-        const tagContainerView = this._createTagContainerView();
-        contentView.addView(tagContainerView);
-        this._tagContainerView = tagContainerView;
-
-        return contentView;
-    }
-
-    _createTitleLabel() {
-        const label = new Label();
-        label.fontWeight = Label.FontWeight.bold;
-        label.fontSize = "15px";
-        label.fontFamily = Label.FontFamily.sansSerif;
-        label.text = "Natalie";
-        label.color = Color.black;
-
-        return label;
-    }
-
-    _createTextView() {
-        const textView = new TextView();
-        textView.fontFamily = Label.FontFamily.sansSerif;
-        textView.fontSize = "14px";
-        textView.padding = Padding.zero;
-        textView.margin = Margin.zero;
-        textView.color = Color.darkGrey;
-        textView.text = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy.";
-
-        return textView;
     }
 
     get expiryTag() {
@@ -167,19 +137,72 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         this.expiryTag.text = value;
     }
 
+    /**
+     * the methods below are used to create/manage the view hierarchy
+     */
+    _createView() {
+        const view = super._createView(), dividerView = this._createDividerView(), buttonContainerView = this._createButtonContainerView();
+        view.backgroundColor = new Color(245, 245, 245);
+
+        view.addView(dividerView);
+
+        view.addView(buttonContainerView);
+
+        return view;
+    }
+
+    _createContentView() {
+        const contentView = super._createContentView(), titleLabel = this._createTitleLabel(), textView = this._createTextView(), tagContainerView = this._createTagContainerView();
+        contentView.axis = StackView.Axis.vertical;
+        contentView.crossAxisAlignment = StackView.MainAxisAlignment.flexStart;
+        contentView.padding = Padding.all("10px");
+        contentView.gap = Gap.all("5px");
+
+        contentView.addView(titleLabel);
+        this._titleLabel = titleLabel;
+
+        contentView.addView(textView);
+        this._textView = textView;
+
+        contentView.addView(tagContainerView);
+        this._tagContainerView = tagContainerView;
+
+        return contentView;
+    }
+
+    _createTitleLabel() {
+        const label = new Label();
+        label.fontWeight = Label.FontWeight.bold;
+        label.fontSize = "15px";
+        label.fontFamily = Label.FontFamily.sansSerif;
+        label.text = "Natalie";
+        label.color = Color.black;
+
+        return label;
+    }
+
+    _createTextView() {
+        const textView = new TextView();
+        textView.fontFamily = Label.FontFamily.sansSerif;
+        textView.fontSize = "14px";
+        textView.padding = Padding.zero;
+        textView.margin = Margin.zero;
+        textView.color = Color.darkGrey;
+        textView.text = "Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy.";
+
+        return textView;
+    }
+
     _createTagContainerView() {
-        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.center, Gap.all("5px"));
+        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.center, Gap.all("5px")), durationTag = this._createDurationTag(), scoreTag = this._createScoreTag(), expiryTag = this._createExpiryTag();
         stackView.margin = Margin.top("15px");
 
-        const durationTag = this._createDurationTag();
         this._durationTag = durationTag;
         stackView.addView(durationTag);
 
-        const scoreTag = this._createScoreTag();
         this._scoreTag = scoreTag;
         stackView.addView(scoreTag);
 
-        const expiryTag = this._createExpiryTag();
         this._expiryTag = expiryTag;
         stackView.addView(expiryTag);
 
@@ -221,46 +244,26 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         return tag;
     }
 
-    get acceptButton() {
-        return this._acceptButton;
-    }
-
-    get finishButton() {
-        return this._finishButton;
-    }
-
-    get cancelButton() {
-        return this._cancelButton;
-    }
-
-    get deleteButton() {
-        return this._deleteButton;
-    }
-
     _createButtonContainerView() {
-        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceAround, StackView.CrossAxisAlignment.center, Gap.all("20px"));
+        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceAround, StackView.CrossAxisAlignment.center, Gap.all("20px")), acceptButton = this._createAcceptButton(), deleteButton = this._createDeleteButton(), finishButton = this._createFinishButton(), cancelButton = this._createCancelButton();
         stackView.padding = Padding.axes("30px", "10px");
 
-        const acceptButton = this._createAcceptButton();
         stackView.addView(acceptButton);
         this._acceptButton = acceptButton;
 
-        const deleteButton = this._createDeleteButton();
         stackView.addView(deleteButton);
         this._deleteButton = deleteButton;
 
-        const finishButton = this._createFinishButton();
         stackView.addView(finishButton);
         this._finishButton = finishButton;
 
-        const cancelButton = this._createCancelButton();
         stackView.addView(cancelButton);
         this._cancelButton = cancelButton;
 
         return stackView;
     }
 
-    _createButton() { 
+    _createButton() {
         const button = new Button();
         button.borders = Borders.all(new Border(Color.darkGrey, "1px"));
         button.padding = Padding.zero;
@@ -270,40 +273,36 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
     }
 
     _createAcceptButton() {
-        const button = this._createButton();
+        const button = this._createButton(), acceptIcon = this._createAcceptIcon();
         button.backgroundColor = Color.transparent;
         button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onAccept.bind(this));
-        const acceptIcon = this._createAcceptIcon();
         button.addView(acceptIcon);
 
         return button;
     }
 
     _createDeleteButton() {
-        const button = this._createButton();
-        button.backgroundColor = Color.transparent; 
+        const button = this._createButton(), deleteIcon = this._createDeleteIcon();
+        button.backgroundColor = Color.transparent;
         button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onDelete.bind(this));
-        const deleteIcon = this._createDeleteIcon();
         button.addView(deleteIcon);
 
         return button;
     }
 
     _createFinishButton() {
-        const button = this._createButton();
+        const button = this._createButton(), finishIcon = this._createFinishIcon();
         button.backgroundColor = Color.transparent;
         button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onFinish.bind(this));
-        const finishIcon = this._createFinishIcon();
         button.addView(finishIcon);
 
         return button;
     }
 
     _createCancelButton() {
-        const button = this._createButton();
+        const button = this._createButton(), cancelIcon = this._createCancelIcon();
         button.backgroundColor = Color.transparent;
         button.addEventListener(Button.BUTTON_CLICK_NOTIFICATION_TYPE, this._onCancel.bind(this));
-        const cancelIcon = this._createCancelIcon();
         button.addView(cancelIcon);
 
         return button;
@@ -353,13 +352,16 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
     _createDividerView() {
         const inlineBlock = new InlineBlock();
         inlineBlock.minWidth = "2px";
-        inlineBlock.corners = Corners.all(new RoundedCorner("1px"))
+        inlineBlock.corners = Corners.all(new RoundedCorner("1px"));
         inlineBlock.backgroundColor = Color.lightGrey;
         inlineBlock.margin = Margin.vertical("25px");
 
         return inlineBlock;
     }
 
+    /**
+     * this method is called after the internal state has been modified. it manages the ui to match the state.
+     */
     _applyChallengeState() {
         const challengeState = this.challengeState;
 
@@ -390,12 +392,19 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         }
     }
 
+    /**
+     * this method returns a flag indicating wether the current data object has been created by the current user or not
+     * @returns a boolean flag
+     */
     _authorIsUser() {
         const user = AppWriteAuthentication.sharedInstance.user;
-        if (user === undefined) return false;
+        if (user === undefined) { return false; }
         return this.data.author !== user.$id;
     }
 
+    /**
+     * this methods are used to notify observers of button clicks
+     */
     _onDelete() {
         const event = new Event(BGChallengeListViewItemView.CHALLENGE_DELETE_NOTIFICATION_TYPE, this);
         this.notifyAll(event);
@@ -416,20 +425,25 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         this.notifyAll(event);
     }
 
+    /**
+     * this method is used to assign properties from the data source to ui elements
+     */
     _applyData() {
-        const data = this.data;
+        const data = this.data, isExpiring = data.timestamp !== undefined, expiresAt = data.timestamp + data.duration, currentDate = (new Date()).getTime() / 1000;
 
         this.title = data.title;
         this.text = data.description;
         this.duration = this._formatDuration(data.duration);
-        const isExpiring = data.timestamp !== undefined;
         this.score = data.score;
-        const expiresAt = data.timestamp + data.duration;
-        const currentDate = (new Date()).getTime() / 1000;
         this.challengeState = isExpiring ? (expiresAt < currentDate) ? BGChallengeListViewItemView.ChallengeState.expired : BGChallengeListViewItemView.ChallengeState.assigned : BGChallengeListViewItemView.ChallengeState.unassigned;
-        if (isExpiring === true) this.expiry = this._calculateRemainingTime(expiresAt);
+        if (isExpiring === true) { this.expiry = this._calculateRemainingTime(expiresAt); }
     }
 
+    /**
+     * this method is used to convert seconds into a human readable format
+     * @param {number} duration 
+     * @returns 
+     */
     _formatDuration(duration) {
         let resultString;
         switch (duration) {
@@ -457,40 +471,38 @@ export default class BGChallengeListViewItemView extends BGListViewItemView {
         return resultString;
     }
 
+    /**
+     * this method is used to calculate the remaining time for a challenge and return a human readable string
+     * @param {number} timestamp timestamp in seconds 
+     * @returns 
+     */
     _calculateRemainingTime(timestamp) {
-        let expDate = new Date(timestamp * 1000);
-        let currDate = new Date();
-        let days = 0;
-        let diffInMillieSeconds = ((expDate - currDate) / (1000 * 60));
-        let minutes = diffInMillieSeconds % 60;
-        let cutMinutes = Math.trunc(minutes);
-        let seconds = Math.trunc((Math.trunc((minutes % 1) * 100) * 60) / 100);
-        let hours = Math.trunc(diffInMillieSeconds / 60);
+        let expDate = new Date(timestamp * 1000), currDate = new Date(), days = 0, diffInMillieSeconds = ((expDate - currDate) / (1000 * 60)), minutes = diffInMillieSeconds % 60, cutMinutes = Math.trunc(minutes), seconds = Math.trunc((Math.trunc((minutes % 1) * 100) * 60) / 100), hours = Math.trunc(diffInMillieSeconds / 60);
 
-        if (diffInMillieSeconds < 0) {
-            return "abgelaufen";
-        }
-        if (minutes < 10) {
-            cutMinutes = "0" + cutMinutes;
-        }
-        if (seconds < 10) {
-            seconds = "0" + seconds;
-        }
+        if (diffInMillieSeconds < 0) { return "abgelaufen"; }
+        if (minutes < 10) { cutMinutes = "0" + cutMinutes; }
+        if (seconds < 10) { seconds = "0" + seconds; }
 
         return this._formatRemainingTime(days, hours, cutMinutes, seconds);
     }
 
+    /**
+     * this method is used to create a human readable string from a time
+     * @param {number} days 
+     * @param {number} hours 
+     * @param {number} minutes 
+     * @param {number} seconds 
+     * @returns 
+     */
     _formatRemainingTime(days, hours, minutes, seconds) {
-        let resultString;
-        if (hours > 24) {
-            days = Math.trunc(hours / 24);
-            hours = hours % 24
-            resultString = days + " d";
-        } else if (days < 1 && hours > 1) {
-            resultString = hours + " h";
-        } else if (hours < 1) {
-            resultString = minutes + " m" + " : " + seconds + " s";
+        let resultString, d = days, h = hours;
+        if (h > 24) {
+            d = Math.trunc(h / 24);
+            h = h % 24;
+            resultString = d + " d";
         }
+        else if (d < 1 && h > 1) { resultString = h + " h"; }
+        else if (h < 1) { resultString = minutes + " m : " + seconds + " s"; }
 
         return resultString;
     }

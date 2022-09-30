@@ -1,10 +1,11 @@
-"use strict";
-
 import { Teams } from "appwrite";
 import AppWriteClient from "../../AppWrite/AppWriteClient.js";
 import AppWriteConfig from "../../AppWrite/AppWriteConfig.js";
 import AppWriteResourceManager from "./AppWriteResourceManager.js";
 
+/**
+ * this class encapsulates all api calls needed to manage team memberships
+ */
 export default class AppWriteMembershipManager extends AppWriteResourceManager {
 
     constructor(teamId) {
@@ -17,33 +18,43 @@ export default class AppWriteMembershipManager extends AppWriteResourceManager {
         return this._teamId;
     }
 
-    _configure() {
-        this._api = new Teams(AppWriteClient.sharedInstance.client);
-    }
-
     get api() {
         return this._api;
     }
 
+    /**
+     * this method is overridden to establish an new api connection
+     */
+    _configure() {
+        this._api = new Teams(AppWriteClient.sharedInstance.client);
+    }
+
+    /**
+     * this method is used to retrieve an array of memberships
+     * @param {string} filter 
+     * @returns 
+     */
     async loadResources(filter) {
         const result = await this.api.getMemberships(this.teamId, filter);
 
         return result.memberships;
     }
 
-    async _createMembership(mail) {
+    /**
+     * this method adds a new member to a team 
+     * @param {string} mail 
+     * @returns 
+     */
+    async createMembership(mail) {
         return await this.api.createMembership(this.teamId, mail, ["admin"], `https://${AppWriteConfig.APPLICATION_URL}`);
     }
 
-    createMembership(mail) {
-        return this._createMembership(mail).then(this._didCreate.bind(this), error => { throw error });
-    }
-
-    async _delete(resource) {
+    /**
+     * this method is used to delete a team member
+     * @param {object} resource 
+     * @returns 
+     */
+    async delete(resource) {
         return await this.api.deleteMembership(resource.teamId, resource.membershipId);
-    }
-
-    delete(resource) {
-        this._delete(resource).then(this._didDelete.bind(this), error => { throw error });
     }
 }

@@ -1,7 +1,8 @@
-"use strict";
-
 import BGSectionedListViewItemData from "./BGSectionedListViewItemData.js";
 
+/**
+ * this class is used to resemble the data source for a challenge
+ */
 export default class BGSectionedListViewChallengeData extends BGSectionedListViewItemData {
 
     constructor(id, createdAt, updatedAt, title, description, duration, score, origin, author, timestamp, assignee) {

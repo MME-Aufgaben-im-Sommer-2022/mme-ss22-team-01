@@ -1,9 +1,12 @@
-"use strict";
-
+/*eslint no-magic-numbers: "off"*/
 import AppWriteAuthentication from "../AppWrite/AppWriteAuthentication.js";
 import { TextField, Border, Borders, BoxShadow, Color, Corners, Label, Padding, RoundedCorner, StackView, View, Gap, Margin, Button, Controller } from "../UI/libs/WrappedUI.js";
 import image from "../../public/muneeb-syed-x9NfeD3FpsE-blur-10-unsplash.jpg";
+import Logger from "../utils/Logger.js";
 
+/**
+ * this controller is used for logging users in and out and for creating new users
+ */
 export default class BGAuthenticationController extends Controller {
 
     constructor(mode = BGAuthenticationController.Mode.login) {
@@ -12,31 +15,49 @@ export default class BGAuthenticationController extends Controller {
         this.mode = mode;
     }
 
+    /**
+     * constant to be used as a login button label
+     */
     static get LOGIN_BUTTON_HINT_TEXT() {
         return "Anmelden";
     }
 
+    /**
+    * constant to be used as a register button label
+     */
     static get REGISTER_BUTTON_HINT_TEXT() {
         return "Registrieren";
     }
 
+    /**
+     * this constant is used to distinguish between the login or the signup state of the controller
+     */
     static get Mode() {
         return Object.freeze({
             login: "login",
-            register: "register"
+            register: "register",
         });
     }
 
+    /**
+     * a getter to obtain the current mode 
+     */
     get mode() {
         return this._mode;
     }
 
+    /**
+     * a setter to manipulate the current mode
+     */
     set mode(value) {
         this._mode = value;
 
         this._updateMode();
     }
 
+    /*
+     * a variety of getters and setters to access textfields and their corresponding values
+     */
     get title() {
         return this.label.text;
     }
@@ -113,8 +134,11 @@ export default class BGAuthenticationController extends Controller {
         return this._contentView;
     }
 
+    /*
+    * below are several functions to create views an manage the controllers view hierarchy. 
+    */
     _createView() {
-        const view = super._createView();
+        const view = super._createView(), contentView = this._createContentView();
 
         view.position = View.Position.absolute;
         view.left = "0px";
@@ -128,7 +152,6 @@ export default class BGAuthenticationController extends Controller {
         view.backgroundSize = "cover";
         view.backgroundImage = `url(${image})`;
 
-        const contentView = this._createContentView();
         this._contentView = contentView;
         view.addView(contentView);
 
@@ -136,25 +159,21 @@ export default class BGAuthenticationController extends Controller {
     }
 
     _createContentView() {
-        const stackView = new StackView(StackView.Axis.vertical, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.stretch);
+        const stackView = new StackView(StackView.Axis.vertical, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.stretch), label = this._createLabel(), textFieldContainerView = this._createTextFieldContainerView(), buttonContainerView = this._createButtonContainerView();
         stackView.gap = Gap.all("25px");
         stackView.width = "325px";
 
-        const label = this._createLabel();
         stackView.addView(label);
         this._label = label;
 
-        const textFieldContainerView = this._createTextFieldContainerView();
         stackView.addView(textFieldContainerView);
-
-        const buttonContainerView = this._createButtonContainerView();
         stackView.addView(buttonContainerView);
 
         return stackView;
     }
 
     _createTextFieldContainerView() {
-        const stackView = new StackView(StackView.Axis.vertical, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.stretch);
+        const stackView = new StackView(StackView.Axis.vertical, StackView.MainAxisAlignment.flexStart, StackView.CrossAxisAlignment.stretch), mailTextField = this._createMailTextField(), nameTextField = this._createNameTextField(), passwordTextField = this._createPasswordTextField();
 
         stackView.gap = Gap.all("2px");
         stackView.overflow = StackView.Overflow.hidden;
@@ -163,15 +182,12 @@ export default class BGAuthenticationController extends Controller {
         stackView.corners = Corners.all(new RoundedCorner("10px"));
         stackView.backgroundColor = Color.darkGreen;
 
-        const mailTextField = this._createMailTextField();
         stackView.addView(mailTextField);
         this._mailTextField = mailTextField;
 
-        const nameTextField = this._createNameTextField();
         stackView.addView(nameTextField);
         this._nameTextField = nameTextField;
 
-        const passwordTextField = this._createPasswordTextField();
         stackView.addView(passwordTextField);
         this._passwordTextField = passwordTextField;
 
@@ -179,13 +195,11 @@ export default class BGAuthenticationController extends Controller {
     }
 
     _createButtonContainerView() {
-        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.center, Gap.all("10px"));
+        const stackView = new StackView(StackView.Axis.horizontal, StackView.MainAxisAlignment.spaceBetween, StackView.CrossAxisAlignment.center, Gap.all("10px")), modeButton = this._createModeButton(), submitButton = this._createSubmitButton();
 
-        const modeButton = this._createModeButton();
         this._modeButton = modeButton;
         stackView.addView(modeButton);
 
-        const submitButton = this._createSubmitButton();
         this._submitButton = submitButton;
         stackView.addView(submitButton);
 
@@ -275,6 +289,9 @@ export default class BGAuthenticationController extends Controller {
         return button;
     }
 
+    /**
+     * this method gets called upon mode change to update the view and hide/show corresponding textfields
+     */
     _updateMode() {
         const mode = this.mode;
 
@@ -294,22 +311,28 @@ export default class BGAuthenticationController extends Controller {
         }
     }
 
+    /**
+     * this method is used to toggle between login and signup mode
+     */
     _switchMode() {
         this.mode = this.mode === BGAuthenticationController.Mode.login ? BGAuthenticationController.Mode.register : BGAuthenticationController.Mode.login;
     }
 
+    /**
+     * this method is invoked if the user clicks the submit button to login/signup accounts. It validates inputs and contacts the appwrite api to sign users in.
+     */
     async _submit() {
         const contentView = this.contentView;
         try {
             const mode = this.mode;
             switch (mode) {
                 case BGAuthenticationController.Mode.login:
-                    if ((this.mailTextField.validate() && this.passwordTextField.validate()) === false) throw new Error("Failed to validate input");
+                    if ((this.mailTextField.validate() && this.passwordTextField.validate()) === false) { throw new Error("Failed to validate input"); }
                     contentView.isDisabled = true;
                     await AppWriteAuthentication.sharedInstance.login(this.email, this.password);
                     break;
                 case BGAuthenticationController.Mode.register:
-                    if ((this.mailTextField.validate() && this.nameTextField.validate() && this.passwordTextField.validate()) === false) throw new Error("Failed to validate input");
+                    if ((this.mailTextField.validate() && this.nameTextField.validate() && this.passwordTextField.validate()) === false) { throw new Error("Failed to validate input"); }
                     contentView.isDisabled = true;
                     await AppWriteAuthentication.sharedInstance.register(this.email, this.password, this.name);
                     break;
@@ -319,7 +342,7 @@ export default class BGAuthenticationController extends Controller {
             this.removeFromParentController();
         }
         catch (error) {
-            console.log(error);
+            Logger.sharedInstance.error(error);
         }
         finally {
             contentView.isDisabled = false;

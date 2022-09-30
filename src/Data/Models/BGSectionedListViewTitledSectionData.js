@@ -1,7 +1,8 @@
-"use strict";
-
 import BGSectionedListViewSectionData from "./BGSectionedListViewSectionData.js";
 
+/**
+ * this class is extends a basic data source for any section for a header property to store a title
+ */
 export default class BGSectionedListViewTitledSectionData extends BGSectionedListViewSectionData {
 
     constructor(id, createdAt, updatedAt, items, header) {
