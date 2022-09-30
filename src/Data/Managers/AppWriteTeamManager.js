@@ -119,7 +119,7 @@ export default class AppWriteTeamManager extends AppWriteResourceManager {
     async createChat(mail) {
         const api = this.api, team = await api.create(AppWriteConfig.UNIQUE_ID, AppWriteTeamManager.TeamType.chat);
 
-        await api.createMembership(team.$id, mail, ["admin"], `https://${AppWriteConfig.APPLICATION_URL}`); // todo https vielleicht in config aufnehemn! testen
+        await api.createMembership(team.$id, mail, ["owner"], `https://${AppWriteConfig.APPLICATION_URL}`); // todo https vielleicht in config aufnehemn! testen
 
         return team;
     }
